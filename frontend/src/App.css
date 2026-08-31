@@ -290,6 +290,18 @@
   max-width: 720px;
 }
 
+.reference-link {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.reference-link:hover {
+  text-decoration: underline;
+}
+
 .step-tracker {
   display: flex;
   gap: 6px;

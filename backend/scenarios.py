@@ -18,6 +18,7 @@ SCENARIOS = [
             "given height -- there's no way to sneak extra sats past that "
             "check, no matter how much hashpower you have."
         ),
+        "reference": None,
         "editable": {
             "field": "value_sats",
             "label": "Coinbase payout (satoshis)",
@@ -45,6 +46,7 @@ SCENARIOS = [
             "transactions themselves for anything else -- any mismatch is an "
             "instant, cheap rejection."
         ),
+        "reference": None,
         "editable": {
             "field": "merkle_root_hex",
             "label": "Merkle root (hex)",
@@ -69,6 +71,7 @@ SCENARIOS = [
             "there anymore. This is the actual mechanism that makes it "
             "impossible to spend the same bitcoin twice."
         ),
+        "reference": None,
         "editable": {
             "field": "utxo_key",
             "label": "UTXO to spend",
@@ -91,11 +94,16 @@ SCENARIOS = [
             "A \"dust\" output is one so small it would cost more in future "
             "fees to spend than it's worth. Core tolerates exactly one dust "
             "output per transaction -- a deliberate allowance for things like "
-            "fee-bumping -- but rejects the transaction the moment it has a "
-            "second one. This is purely a relay policy choice, not a "
-            "consensus rule: the exact same transaction would be perfectly "
-            "valid if a miner mined it directly into a block."
+            "fee-bumping, known as ephemeral dust -- but rejects the "
+            "transaction the moment it has a second one. This is purely a "
+            "relay policy choice, not a consensus rule: the exact same "
+            "transaction would be perfectly valid if a miner mined it "
+            "directly into a block."
         ),
+        "reference": {
+            "label": "bitcoin/bitcoin#30239 -- \"Ephemeral Dust\"",
+            "url": "https://github.com/bitcoin/bitcoin/pull/30239",
+        },
         "editable": {
             "field": "value_sats",
             "label": "Output value (satoshis)",

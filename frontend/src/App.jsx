@@ -188,6 +188,11 @@ export default function App() {
               <div className="scenario-header">
                 <h2>{selected.title}</h2>
                 <p className="explanation">{selected.explanation}</p>
+                {selected.reference && (
+                  <a className="reference-link" href={selected.reference.url} target="_blank" rel="noreferrer">
+                    {selected.reference.label} &rarr;
+                  </a>
+                )}
               </div>
 
               <StepTracker stage={stage} />
