@@ -167,8 +167,8 @@ SCENARIOS = [
         ),
         "reference": None,
         "editable": {
-            "field": "spend_height",
-            "label": "Coinbase height to spend",
+            "field": "confirmations",
+            "label": "Confirmations",
             "type": "int",
             "min": 1,
             "max": 123,

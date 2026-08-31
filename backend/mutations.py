@@ -267,10 +267,13 @@ def fee_too_low(fee_sats: int | None = None) -> dict:
 
 
 COINBASE_MATURITY = 100
-MATURE_HEIGHT = FIXTURES["frozen_tip_height"] - COINBASE_MATURITY + 1  # last height with >=100 confs
 
 
-def _spend_coinbase_block(calls: list, height: int):
+def _spend_coinbase_block(calls: list, confirmations: int):
+    # nSpendHeight (one past the frozen tip) minus the coinbase's own height
+    # is exactly "confirmations" -- so this is a direct, literal translation,
+    # not an approximation.
+    height = FIXTURES["frozen_tip_height"] - confirmations + 1
     blockhash = _traced_rpc(calls, "getblockhash", [height])
     block = _traced_rpc(calls, "getblock", [blockhash, 2])
     coinbase = block["tx"][0]
@@ -292,7 +295,7 @@ def _spend_coinbase_block(calls: list, height: int):
     }
     signed = _traced_rpc(calls, "signrawtransactionwithwallet", [raw, [prevtx]])
     if not signed["complete"]:
-        raise RuntimeError(f"coinbase_maturity tx failed to sign (height={height}): {signed}")
+        raise RuntimeError(f"coinbase_maturity tx failed to sign (confirmations={confirmations}): {signed}")
 
     tx = CTransaction()
     tx.deserialize(io.BytesIO(bytes.fromhex(signed["hex"])))
@@ -303,28 +306,30 @@ def _spend_coinbase_block(calls: list, height: int):
     return block_out
 
 
-def coinbase_maturity(spend_height: int | None = None) -> dict:
-    """Try to spend a coinbase reward before it has 100 confirmations.
+def coinbase_maturity(confirmations: int | None = None) -> dict:
+    """Try to spend a coinbase reward that only has some number of
+    confirmations.
 
     Consensus::CheckTxInputs (the same function that produces
     bad-txns-inputs-missingorspent for Double Spend) also enforces
     coinbase maturity: nSpendHeight - coin.nHeight < COINBASE_MATURITY.
-    Default attacks the frozen tip's own coinbase (1 confirmation); the
-    baseline spends one from MATURE_HEIGHT (exactly 100 confirmations),
-    which is the actual accept/reject boundary.
+    That left-hand side is exactly the coinbase's confirmation count, so
+    the editable value here maps onto Core's own check with no
+    translation needed. Default attacks a coinbase with just 1
+    confirmation; the baseline uses exactly 100, the real boundary.
     """
     calls = []
-    chosen_height = FIXTURES["frozen_tip_height"] if spend_height is None else spend_height
+    chosen_confs = 1 if confirmations is None else confirmations
 
-    baseline_block = _spend_coinbase_block(calls, MATURE_HEIGHT)
-    attack_block = baseline_block if chosen_height == MATURE_HEIGHT else _spend_coinbase_block(calls, chosen_height)
+    baseline_block = _spend_coinbase_block(calls, COINBASE_MATURITY)
+    attack_block = baseline_block if chosen_confs == COINBASE_MATURITY else _spend_coinbase_block(calls, chosen_confs)
 
     return {
         "baseline_hex": baseline_block.serialize().hex(),
         "payload_hex": attack_block.serialize().hex(),
         "build_calls": calls,
-        "editable_value": chosen_height,
-        "hint_value": MATURE_HEIGHT,
+        "editable_value": chosen_confs,
+        "hint_value": COINBASE_MATURITY,
     }
 
 
