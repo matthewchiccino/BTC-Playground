@@ -64,18 +64,41 @@ SOURCES = {
         "rule_type": "consensus",
     },
     "dust": {
-        "file": "src/policy/policy.cpp",
-        "function": "IsStandardTx",
-        "lines": [157, 160],
-        "permalink": _permalink("src/policy/policy.cpp", 157, 160),
+        # Found wrong at first: this originally cited IsStandardTx (below,
+        # in also_produced_by), which only fires when a tx has >1 dust
+        # outputs. dust_output() builds a tx with exactly ONE dust output
+        # plus a nonzero fee -- PreCheckEphemeralTx is what actually fires,
+        # and it runs earlier in MemPoolAccept's check sequence. Confirmed
+        # by gen_sources.py's scan (both are real call sites for "dust")
+        # plus the live node (this is genuinely which one returns for our
+        # payload).
+        "file": "src/policy/ephemeral_policy.cpp",
+        "function": "PreCheckEphemeralTx",
+        "lines": [23, 27],
+        "permalink": _permalink("src/policy/ephemeral_policy.cpp", 23, 27),
         "snippet": (
-            "// Only MAX_DUST_OUTPUTS_PER_TX dust is permitted(on otherwise valid ephemeral dust)\n"
-            "if (GetDust(tx, dust_relay_fee).size() > MAX_DUST_OUTPUTS_PER_TX) {\n"
-            '    reason = "dust";\n'
-            "    return false;\n"
-            "}"
+            "bool PreCheckEphemeralTx(const CTransaction& tx, CFeeRate dust_relay_rate, CAmount base_fee, CAmount mod_fee, TxValidationState& state)\n"
+            "{\n"
+            "    // We never want to give incentives to mine this transaction alone\n"
+            "    if ((base_fee != 0 || mod_fee != 0) && !GetDust(tx, dust_relay_rate).empty()) {\n"
+            '        return state.Invalid(TxValidationResult::TX_NOT_STANDARD, "dust", "tx with dust output must be 0-fee");'
         ),
         "rule_type": "policy",
+        "also_produced_by": [
+            {
+                "file": "src/policy/policy.cpp",
+                "function": "IsStandardTx",
+                "lines": [157, 160],
+                "permalink": _permalink("src/policy/policy.cpp", 157, 160),
+                "note": (
+                    "Same string, different check: this only fires when a tx has "
+                    "MORE THAN ONE dust output. This scenario's tx has exactly "
+                    "one dust output plus a nonzero fee, so IsStandardTx's own "
+                    "count > 1 condition is false here -- PreCheckEphemeralTx "
+                    "(the primary entry) is what actually fires first."
+                ),
+            }
+        ],
     },
     "min relay fee not met": {
         "file": "src/validation.cpp",

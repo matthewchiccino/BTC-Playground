@@ -424,6 +424,26 @@ export default function App() {
                               </a>
                             </div>
                             <pre className="source-snippet">{submitData.source.snippet}</pre>
+                            {submitData.source.also_produced_by?.length > 0 && (
+                              <details className="source-also">
+                                <summary>
+                                  Also produced by {submitData.source.also_produced_by.length} other site(s)
+                                </summary>
+                                {submitData.source.also_produced_by.map((alt) => (
+                                  <div className="source-also-item" key={alt.permalink}>
+                                    <div className="source-location">
+                                      <strong>{alt.file}</strong> &middot; {alt.function} &middot; lines{" "}
+                                      {alt.lines[0]}-{alt.lines[1]}
+                                      <br />
+                                      <a href={alt.permalink} target="_blank" rel="noreferrer">
+                                        view on GitHub &rarr;
+                                      </a>
+                                    </div>
+                                    <p className="source-also-note">{alt.note}</p>
+                                  </div>
+                                ))}
+                              </details>
+                            )}
                           </>
                         ) : (
                           <p className="source-empty">No mapped source location for this verdict.</p>
