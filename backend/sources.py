@@ -77,4 +77,17 @@ SOURCES = {
         ),
         "rule_type": "policy",
     },
+    "min relay fee not met": {
+        "file": "src/validation.cpp",
+        "function": "MemPoolAccept::CheckFeeRate",
+        "lines": [714, 717],
+        "permalink": _permalink("src/validation.cpp", 714, 717),
+        "snippet": (
+            "if (package_fee < m_pool.m_opts.min_relay_feerate.GetFee(package_size)) {\n"
+            '    return state.Invalid(TxValidationResult::TX_RECONSIDERABLE, "min relay fee not met",\n'
+            "                         strprintf(\"%d < %d\", package_fee, m_pool.m_opts.min_relay_feerate.GetFee(package_size)));\n"
+            "}"
+        ),
+        "rule_type": "policy",
+    },
 }

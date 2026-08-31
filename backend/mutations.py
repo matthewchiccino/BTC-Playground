@@ -14,6 +14,7 @@ rather than hand-rolling serialization (see plam.md section 4.2).
 """
 import io
 import json
+import math
 import os
 import sys
 
@@ -210,9 +211,65 @@ def dust_output(value_sats: int | None = None) -> dict:
     }
 
 
+def fee_too_low(fee_sats: int | None = None) -> dict:
+    """Spend spendable_a paying a caller-chosen fee.
+
+    Checked against the live node, not assumed: below the node's relay fee
+    floor (mempoolminfee/minrelaytxfee, ~0.1 sat/vbyte here on a quiet
+    regtest node), MemPoolAccept::CheckFeeRate rejects the transaction
+    outright with "min relay fee not met" -- before it's ever added to the
+    mempool. Like dust, this is enforced only at the mempool/relay layer,
+    not in ConnectBlock: a miner could include a 0-fee transaction in a
+    block and it would be perfectly consensus-valid.
+    """
+    calls = []
+    spendable = FIXTURES["utxos"]["spendable_a"]
+    chosen_fee = 1 if fee_sats is None else fee_sats
+
+    def _build(fee: int) -> str:
+        addr = _traced_rpc(calls, "getnewaddress", ["fee_test"])
+        spend_sats = round(spendable["amount"] * 100_000_000)
+        send_sats = spend_sats - fee
+
+        raw = _traced_rpc(
+            calls,
+            "createrawtransaction",
+            [[{"txid": spendable["txid"], "vout": spendable["vout"]}], {addr: round(send_sats / 100_000_000, 8)}],
+        )
+        prevtx = {
+            "txid": spendable["txid"],
+            "vout": spendable["vout"],
+            "scriptPubKey": spendable["scriptPubKey"],
+            "amount": spendable["amount"],
+        }
+        signed = _traced_rpc(calls, "signrawtransactionwithwallet", [raw, [prevtx]])
+        if not signed["complete"]:
+            raise RuntimeError(f"fee_too_low tx failed to sign (fee={fee}): {signed}")
+        return signed["hex"]
+
+    baseline_hex = _build(1000)  # comfortably above the relay floor
+    payload_hex = baseline_hex if chosen_fee == 1000 else _build(chosen_fee)
+
+    # The relay floor is a feerate, not a flat number -- compute the actual
+    # minimum fee for THIS specific payload's real (signature-dependent)
+    # size, rather than hardcoding a threshold that would silently drift.
+    vsize = _traced_rpc(calls, "decoderawtransaction", [payload_hex])["vsize"]
+    minrelay_btc_per_kvb = _traced_rpc(calls, "getmempoolinfo")["minrelaytxfee"]
+    min_fee_sats = math.ceil(minrelay_btc_per_kvb * 100_000_000 * vsize / 1000)
+
+    return {
+        "baseline_hex": baseline_hex,
+        "payload_hex": payload_hex,
+        "build_calls": calls,
+        "editable_value": chosen_fee,
+        "hint_value": min_fee_sats,
+    }
+
+
 MUTATIONS = {
     "coinbase_oversubsidy": coinbase_oversubsidy,
     "bad_merkle_root": bad_merkle_root,
     "double_spend": double_spend,
     "dust_output": dust_output,
+    "fee_too_low": fee_too_low,
 }

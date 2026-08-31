@@ -116,6 +116,36 @@ SCENARIOS = [
             "step": 1,
         },
     },
+    {
+        "id": "fee_too_low",
+        "title": "Fee Too Low",
+        "kind": "tx",
+        "fixture_key": "spendable_a",
+        "mutation": "fee_too_low",
+        "expected_reject_reason": "min relay fee not met",
+        "rule_type": "policy",
+        "explanation": (
+            "Every node sets a minimum fee rate it's willing to relay -- pay "
+            "less than that and your transaction is dropped before it ever "
+            "reaches the mempool, even though it's otherwise perfectly "
+            "valid. This is the exact mechanism behind a wallet's "
+            "\"transaction stuck, fee too low\" warning: the transaction "
+            "isn't broken, it's just not worth a node's bandwidth to "
+            "forward at that price. Like dust, this is a relay policy "
+            "choice, not a consensus rule -- a miner could mine the same "
+            "transaction directly into a block for free and it would be "
+            "perfectly valid."
+        ),
+        "reference": None,
+        "editable": {
+            "field": "fee_sats",
+            "label": "Fee (satoshis)",
+            "type": "int",
+            "min": 1,
+            "max": 1000,
+            "step": 1,
+        },
+    },
 ]
 
 SCENARIOS_BY_ID = {s["id"]: s for s in SCENARIOS}

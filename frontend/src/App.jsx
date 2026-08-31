@@ -275,6 +275,14 @@ export default function App() {
                                 value and rebuild to watch the verdict flip right at the line.
                               </p>
                             )}
+                            {selected.editable.type === "int" && selected.id === "fee_too_low" && (
+                              <p className="step-hint">
+                                This transaction needs at least{" "}
+                                <strong>{buildData.hint_value?.toLocaleString()} sats</strong> to clear
+                                this node's relay floor, given its size. Pick a fee and rebuild to
+                                watch the verdict flip right at the line.
+                              </p>
+                            )}
                             {selected.editable.type === "hex" && (
                               <p className="step-hint">
                                 Every node recomputes this from scratch. Only one exact value is

@@ -1,7 +1,7 @@
 """Plain-script sanity check, no web app: build each attack, submit it,
 print the node's verdict. Run before trusting the FastAPI wrapper.
 """
-from mutations import bad_merkle_root, coinbase_oversubsidy, double_spend, dust_output
+from mutations import bad_merkle_root, coinbase_oversubsidy, double_spend, dust_output, fee_too_low
 from node import rpc
 
 
@@ -22,3 +22,4 @@ if __name__ == "__main__":
     check_block("bad_merkle_root", bad_merkle_root()["payload_hex"])
     check_block("double_spend", double_spend()["payload_hex"])
     check_tx("dust_output", dust_output()["payload_hex"])
+    check_tx("fee_too_low", fee_too_low()["payload_hex"])
