@@ -1,0 +1,35 @@
+:root {
+  --bg: #313338;
+  --bg-panel: #2b2d31;
+  --bg-panel-raised: #35373c;
+  --border: #43454b;
+  --text: #e6e8eb;
+  --text-dim: #aab1bd;
+  --text-faint: #7c8290;
+  --accent: #f7931a;
+  --accent-dim: #7a4e10;
+  --danger: #ff5c5c;
+  --ok: #4caf7d;
+  --mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  --sans: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+}
