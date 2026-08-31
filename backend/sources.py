@@ -90,4 +90,18 @@ SOURCES = {
         ),
         "rule_type": "policy",
     },
+    "bad-txns-premature-spend-of-coinbase": {
+        "file": "src/consensus/tx_verify.cpp",
+        "function": "Consensus::CheckTxInputs",
+        "lines": [178, 181],
+        "permalink": _permalink("src/consensus/tx_verify.cpp", 178, 181),
+        "snippet": (
+            "// If prev is coinbase, check that it's matured\n"
+            "if (coin.IsCoinBase() && nSpendHeight - coin.nHeight < COINBASE_MATURITY) {\n"
+            '    return state.Invalid(TxValidationResult::TX_PREMATURE_SPEND, "bad-txns-premature-spend-of-coinbase",\n'
+            "        strprintf(\"tried to spend coinbase at depth %d\", nSpendHeight - coin.nHeight));\n"
+            "}"
+        ),
+        "rule_type": "consensus",
+    },
 }

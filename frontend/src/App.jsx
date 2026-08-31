@@ -283,6 +283,13 @@ export default function App() {
                                 watch the verdict flip right at the line.
                               </p>
                             )}
+                            {selected.editable.type === "int" && selected.id === "coinbase_maturity" && (
+                              <p className="step-hint">
+                                Height <strong>{buildData.hint_value}</strong> or earlier has 100+
+                                confirmations and is spendable. Pick a block height and rebuild to
+                                watch the verdict flip right at the line.
+                              </p>
+                            )}
                             {selected.editable.type === "hex" && (
                               <p className="step-hint">
                                 Every node recomputes this from scratch. Only one exact value is

@@ -146,6 +146,35 @@ SCENARIOS = [
             "step": 1,
         },
     },
+    {
+        "id": "coinbase_maturity",
+        "title": "Coinbase Maturity",
+        "kind": "block",
+        "fixture_key": None,
+        "mutation": "coinbase_maturity",
+        "expected_reject_reason": "bad-txns-premature-spend-of-coinbase",
+        "rule_type": "consensus",
+        "explanation": (
+            "A freshly-mined block's reward isn't spendable right away -- it "
+            "needs 100 confirmations first. This is the same "
+            "Consensus::CheckTxInputs function that catches Double Spend, "
+            "just a different branch: it checks whether an input being "
+            "spent is a coinbase output, and if so, whether it's actually "
+            "old enough yet. The rule exists so that if a chain reorg ever "
+            "erases a recently-mined block, the coins it created -- and "
+            "anything built on top of spending them -- can be safely undone "
+            "too."
+        ),
+        "reference": None,
+        "editable": {
+            "field": "spend_height",
+            "label": "Coinbase height to spend",
+            "type": "int",
+            "min": 1,
+            "max": 123,
+            "step": 1,
+        },
+    },
 ]
 
 SCENARIOS_BY_ID = {s["id"]: s for s in SCENARIOS}

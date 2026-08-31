@@ -266,10 +266,73 @@ def fee_too_low(fee_sats: int | None = None) -> dict:
     }
 
 
+COINBASE_MATURITY = 100
+MATURE_HEIGHT = FIXTURES["frozen_tip_height"] - COINBASE_MATURITY + 1  # last height with >=100 confs
+
+
+def _spend_coinbase_block(calls: list, height: int):
+    blockhash = _traced_rpc(calls, "getblockhash", [height])
+    block = _traced_rpc(calls, "getblock", [blockhash, 2])
+    coinbase = block["tx"][0]
+    vout0 = coinbase["vout"][0]
+
+    dest = _traced_rpc(calls, "getnewaddress", [f"spend_cb_{height}"])
+    fee_btc = 0.0001
+    send_amount = round(vout0["value"] - fee_btc, 8)
+    raw = _traced_rpc(
+        calls,
+        "createrawtransaction",
+        [[{"txid": coinbase["txid"], "vout": 0}], {dest: send_amount}],
+    )
+    prevtx = {
+        "txid": coinbase["txid"],
+        "vout": 0,
+        "scriptPubKey": vout0["scriptPubKey"]["hex"],
+        "amount": vout0["value"],
+    }
+    signed = _traced_rpc(calls, "signrawtransactionwithwallet", [raw, [prevtx]])
+    if not signed["complete"]:
+        raise RuntimeError(f"coinbase_maturity tx failed to sign (height={height}): {signed}")
+
+    tx = CTransaction()
+    tx.deserialize(io.BytesIO(bytes.fromhex(signed["hex"])))
+
+    tmpl = _traced_rpc(calls, "getblocktemplate", [{"rules": ["segwit"]}])
+    block_out = create_block(tmpl=tmpl, txlist=[tx])
+    add_witness_commitment(block_out)
+    return block_out
+
+
+def coinbase_maturity(spend_height: int | None = None) -> dict:
+    """Try to spend a coinbase reward before it has 100 confirmations.
+
+    Consensus::CheckTxInputs (the same function that produces
+    bad-txns-inputs-missingorspent for Double Spend) also enforces
+    coinbase maturity: nSpendHeight - coin.nHeight < COINBASE_MATURITY.
+    Default attacks the frozen tip's own coinbase (1 confirmation); the
+    baseline spends one from MATURE_HEIGHT (exactly 100 confirmations),
+    which is the actual accept/reject boundary.
+    """
+    calls = []
+    chosen_height = FIXTURES["frozen_tip_height"] if spend_height is None else spend_height
+
+    baseline_block = _spend_coinbase_block(calls, MATURE_HEIGHT)
+    attack_block = baseline_block if chosen_height == MATURE_HEIGHT else _spend_coinbase_block(calls, chosen_height)
+
+    return {
+        "baseline_hex": baseline_block.serialize().hex(),
+        "payload_hex": attack_block.serialize().hex(),
+        "build_calls": calls,
+        "editable_value": chosen_height,
+        "hint_value": MATURE_HEIGHT,
+    }
+
+
 MUTATIONS = {
     "coinbase_oversubsidy": coinbase_oversubsidy,
     "bad_merkle_root": bad_merkle_root,
     "double_spend": double_spend,
     "dust_output": dust_output,
     "fee_too_low": fee_too_low,
+    "coinbase_maturity": coinbase_maturity,
 }
