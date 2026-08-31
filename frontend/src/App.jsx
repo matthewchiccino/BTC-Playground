@@ -247,43 +247,38 @@ export default function App() {
                             {payloadView === "hex" ? "bytes" : "fields"} differ from a valid baseline
                           </p>
                         )}
+                        {selected.editable && (
+                          <div className="editable-inline">
+                            <p className="step-hint">
+                              Subsidy at this height is{" "}
+                              <strong>{buildData.subsidy_sats?.toLocaleString()} sats</strong>. Pick any{" "}
+                              {selected.editable.label.toLowerCase()} and rebuild -- watch the verdict
+                              flip right at the boundary.
+                            </p>
+                            <div className="editable-row">
+                              <input
+                                type="number"
+                                className="editable-input"
+                                min={selected.editable.min}
+                                max={selected.editable.max}
+                                step={selected.editable.step}
+                                value={overrideValue}
+                                onChange={(e) => setOverrideValue(e.target.value)}
+                              />
+                              <button
+                                className="action-btn"
+                                onClick={() => doBuild(Number(overrideValue))}
+                                disabled={overrideValue === ""}
+                              >
+                                Rebuild
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
                 </div>
-
-                {/* Optional: tune the one field this scenario exposes */}
-                {selected.editable && buildData && (
-                  <div className="pane pane-editable">
-                    <div className="pane-header">Try a different value</div>
-                    <div className="pane-body">
-                      <p className="step-hint">
-                        Subsidy at this height is{" "}
-                        <strong>{buildData.subsidy_sats?.toLocaleString()} sats</strong>. Pick any{" "}
-                        {selected.editable.label.toLowerCase()} and rebuild -- watch the verdict flip
-                        right at the boundary.
-                      </p>
-                      <div className="editable-row">
-                        <input
-                          type="number"
-                          className="editable-input"
-                          min={selected.editable.min}
-                          max={selected.editable.max}
-                          step={selected.editable.step}
-                          value={overrideValue}
-                          onChange={(e) => setOverrideValue(e.target.value)}
-                        />
-                        <button
-                          className="action-btn"
-                          onClick={() => doBuild(Number(overrideValue))}
-                          disabled={overrideValue === ""}
-                        >
-                          Rebuild
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 {/* Step 2: Submit */}
                 {stage === "built" && (

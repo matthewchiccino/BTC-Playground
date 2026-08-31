@@ -559,8 +559,10 @@
   border-style: dashed;
 }
 
-.pane-editable {
-  border-color: var(--accent-dim);
+.editable-inline {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
 }
 
 .editable-row {
