@@ -559,6 +559,31 @@
   border-style: dashed;
 }
 
+.pane-editable {
+  border-color: var(--accent-dim);
+}
+
+.editable-row {
+  display: flex;
+  gap: 8px;
+}
+
+.editable-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 7px 10px;
+}
+
+.editable-input:focus {
+  outline: none;
+  border-color: var(--accent-dim);
+}
+
 .pane-body-center {
   text-align: center;
   padding: 20px 16px;
@@ -575,6 +600,11 @@
   border-radius: 7px;
   cursor: pointer;
   transition: border-color 0.1s, background 0.1s;
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .action-btn:hover {

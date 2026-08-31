@@ -35,17 +35,21 @@ def _traced_rpc(calls: list, method: str, params: list | None = None):
     return rpc(method, params)
 
 
-def coinbase_oversubsidy() -> dict:
-    """Mint exactly 1 satoshi more than the block subsidy allows."""
+def coinbase_oversubsidy(value_sats: int | None = None) -> dict:
+    """Pay the coinbase output some amount. Defaults to 1 satoshi over the
+    block subsidy; a caller-supplied value_sats lets the UI's "try a
+    different value" knob explore the accept/reject boundary directly.
+    """
     calls = []
     tmpl = _traced_rpc(calls, "getblocktemplate", [{"rules": ["segwit"]}])
 
     valid_coinbase = create_coinbase(height=tmpl["height"])
+    subsidy_sats = valid_coinbase.vout[0].nValue
     baseline_block = create_block(tmpl=tmpl, coinbase=valid_coinbase)
     baseline_block.hashMerkleRoot = baseline_block.calc_merkle_root()
 
     attack_coinbase = create_coinbase(height=tmpl["height"])
-    attack_coinbase.vout[0].nValue += 1
+    attack_coinbase.vout[0].nValue = subsidy_sats + 1 if value_sats is None else value_sats
     attack_block = create_block(tmpl=tmpl, coinbase=attack_coinbase)
     attack_block.hashMerkleRoot = attack_block.calc_merkle_root()
 
@@ -53,6 +57,8 @@ def coinbase_oversubsidy() -> dict:
         "baseline_hex": baseline_block.serialize().hex(),
         "payload_hex": attack_block.serialize().hex(),
         "build_calls": calls,
+        "subsidy_sats": subsidy_sats,
+        "editable_value": attack_coinbase.vout[0].nValue,
     }
 
 

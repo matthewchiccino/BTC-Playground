@@ -18,6 +18,13 @@ SCENARIOS = [
             "given height -- there's no way to sneak extra sats past that "
             "check, no matter how much hashpower you have."
         ),
+        "editable": {
+            "field": "value_sats",
+            "label": "Coinbase payout (satoshis)",
+            "min": 0,
+            "max": 10_000_000_000,
+            "step": 1,
+        },
     },
     {
         "id": "bad_merkle_root",
@@ -34,6 +41,7 @@ SCENARIOS = [
             "contents without re-deriving them from scratch -- mutate it and "
             "the mismatch is instantly and cheaply detectable."
         ),
+        "editable": None,
     },
     {
         "id": "double_spend",
@@ -50,6 +58,7 @@ SCENARIOS = [
             "this, which is the entire mechanism that makes Bitcoin's ledger "
             "resistant to spending the same coin twice."
         ),
+        "editable": None,
     },
 ]
 

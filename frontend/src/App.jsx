@@ -65,6 +65,7 @@ export default function App() {
   const [submitData, setSubmitData] = useState(null);
   const [error, setError] = useState(null);
   const [payloadView, setPayloadView] = useState("hex"); // "hex" | "readable"
+  const [overrideValue, setOverrideValue] = useState("");
 
   useEffect(() => {
     fetch(`${API_BASE}/scenarios`)
@@ -86,28 +87,36 @@ export default function App() {
     setSubmitData(null);
     setError(null);
     setPayloadView("hex");
+    setOverrideValue("");
   }
 
   function goHome() {
     setView("home");
   }
 
-  async function doBuild() {
-    setStage("building");
+  async function doBuild(overrideSats) {
+    const isRebuild = overrideSats !== undefined;
+    setStage(isRebuild ? "built" : "building");
     setError(null);
+    if (isRebuild) setSubmitData(null);
     try {
+      const body = { scenario_id: selectedId };
+      if (isRebuild) body.override_value_sats = overrideSats;
       const res = await fetch(`${API_BASE}/build`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scenario_id: selectedId }),
+        body: JSON.stringify(body),
       });
       await throwForStatus(res);
       const data = await res.json();
       setBuildData(data);
+      if (data.editable_value !== undefined && data.editable_value !== null) {
+        setOverrideValue(String(data.editable_value));
+      }
       setStage("built");
     } catch (e) {
-      setError(`Build failed: ${e.message}`);
-      setStage("selected");
+      setError(`${isRebuild ? "Rebuild" : "Build"} failed: ${e.message}`);
+      setStage(isRebuild ? "built" : "selected");
     }
   }
 
@@ -184,7 +193,7 @@ export default function App() {
                   <div className="pane-header">
                     <span>1. The Payload</span>
                     {stage === "selected" && (
-                      <button className="action-btn" onClick={doBuild}>
+                      <button className="action-btn" onClick={() => doBuild()}>
                         Build Payload
                       </button>
                     )}
@@ -242,6 +251,39 @@ export default function App() {
                     )}
                   </div>
                 </div>
+
+                {/* Optional: tune the one field this scenario exposes */}
+                {selected.editable && buildData && (
+                  <div className="pane pane-editable">
+                    <div className="pane-header">Try a different value</div>
+                    <div className="pane-body">
+                      <p className="step-hint">
+                        Subsidy at this height is{" "}
+                        <strong>{buildData.subsidy_sats?.toLocaleString()} sats</strong>. Pick any{" "}
+                        {selected.editable.label.toLowerCase()} and rebuild -- watch the verdict flip
+                        right at the boundary.
+                      </p>
+                      <div className="editable-row">
+                        <input
+                          type="number"
+                          className="editable-input"
+                          min={selected.editable.min}
+                          max={selected.editable.max}
+                          step={selected.editable.step}
+                          value={overrideValue}
+                          onChange={(e) => setOverrideValue(e.target.value)}
+                        />
+                        <button
+                          className="action-btn"
+                          onClick={() => doBuild(Number(overrideValue))}
+                          disabled={overrideValue === ""}
+                        >
+                          Rebuild
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Step 2: Submit */}
                 {stage === "built" && (

@@ -65,6 +65,9 @@ BUILD_ID_PATTERN = r"^[A-Za-z0-9_-]{16,64}$"
 class ScenarioRequest(BaseModel):
     model_config = {"extra": "forbid"}
     scenario_id: str = Field(pattern=SCENARIO_ID_PATTERN)
+    # Coarse schema-level bound; the real min/max for the scenario's
+    # editable field (from scenarios.py) is enforced in the handler.
+    override_value_sats: int | None = Field(default=None, ge=0, le=100_000_000_000)
 
 
 class SubmitRequest(BaseModel):
@@ -97,8 +100,20 @@ def build_scenario(req: ScenarioRequest):
     if scenario is None:
         raise HTTPException(status_code=404, detail=f"unknown scenario_id: {req.scenario_id}")
 
+    editable = scenario.get("editable")
+    kwargs = {}
+    if req.override_value_sats is not None:
+        if not editable:
+            raise HTTPException(status_code=400, detail=f"scenario {scenario['id']} has no editable field")
+        if not (editable["min"] <= req.override_value_sats <= editable["max"]):
+            raise HTTPException(
+                status_code=422,
+                detail=f"{editable['field']} must be between {editable['min']} and {editable['max']}",
+            )
+        kwargs[editable["field"]] = req.override_value_sats
+
     try:
-        result = MUTATIONS[scenario["mutation"]]()
+        result = MUTATIONS[scenario["mutation"]](**kwargs)
         payload_structured = decode_payload(result["payload_hex"], scenario["kind"], result["baseline_hex"])
     except Exception:
         logger.exception("build failed for scenario_id=%s", scenario["id"])
@@ -114,6 +129,9 @@ def build_scenario(req: ScenarioRequest):
         "baseline_hex": result["baseline_hex"],
         "payload_structured": payload_structured,
         "build_calls": result["build_calls"],
+        "editable": editable,
+        "subsidy_sats": result.get("subsidy_sats"),
+        "editable_value": result.get("editable_value"),
     }
 
 
