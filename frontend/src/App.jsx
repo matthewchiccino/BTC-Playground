@@ -65,6 +65,7 @@ export default function App() {
   const [submitData, setSubmitData] = useState(null);
   const [error, setError] = useState(null);
   const [payloadView, setPayloadView] = useState("hex"); // "hex" | "readable"
+  const [overrideValue, setOverrideValue] = useState("");
 
   useEffect(() => {
     fetch(`${API_BASE}/scenarios`)
@@ -86,28 +87,41 @@ export default function App() {
     setSubmitData(null);
     setError(null);
     setPayloadView("hex");
+    setOverrideValue("");
   }
 
   function goHome() {
     setView("home");
   }
 
-  async function doBuild() {
-    setStage("building");
+  async function doBuild(overrideVal) {
+    const isRebuild = overrideVal !== undefined;
+    setStage(isRebuild ? "built" : "building");
     setError(null);
+    if (isRebuild) setSubmitData(null);
     try {
+      const body = { scenario_id: selectedId };
+      if (isRebuild) {
+        const type = selected.editable.type;
+        if (type === "int") body.override_value_sats = Number(overrideVal);
+        else if (type === "hex") body.override_hex = overrideVal;
+        else if (type === "choice") body.override_choice = overrideVal;
+      }
       const res = await fetch(`${API_BASE}/build`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scenario_id: selectedId }),
+        body: JSON.stringify(body),
       });
       await throwForStatus(res);
       const data = await res.json();
       setBuildData(data);
+      if (data.editable_value !== undefined && data.editable_value !== null) {
+        setOverrideValue(String(data.editable_value));
+      }
       setStage("built");
     } catch (e) {
-      setError(`Build failed: ${e.message}`);
-      setStage("selected");
+      setError(`${isRebuild ? "Rebuild" : "Build"} failed: ${e.message}`);
+      setStage(isRebuild ? "built" : "selected");
     }
   }
 
@@ -184,7 +198,7 @@ export default function App() {
                   <div className="pane-header">
                     <span>1. The Payload</span>
                     {stage === "selected" && (
-                      <button className="action-btn" onClick={doBuild}>
+                      <button className="action-btn" onClick={() => doBuild()}>
                         Build Payload
                       </button>
                     )}
@@ -224,19 +238,69 @@ export default function App() {
                         ) : (
                           <DecodedView structured={buildData.payload_structured} />
                         )}
-                        <div className="build-calls">
-                          <span className="build-calls-label">RPC calls used to build this:</span>{" "}
-                          {buildData.build_calls.map((c, i) => (
-                            <code key={i} className="rpc-chip">
-                              {c}
-                            </code>
-                          ))}
-                        </div>
                         {buildData.baseline_hex && (
                           <p className="step-hint diff-hint">
                             <span className="hex-diff-swatch" /> highlighted{" "}
                             {payloadView === "hex" ? "bytes" : "fields"} differ from a valid baseline
                           </p>
+                        )}
+                        {selected.editable && (
+                          <div className="editable-inline">
+                            {selected.editable.type === "int" && (
+                              <p className="step-hint">
+                                Subsidy at this height is{" "}
+                                <strong>{buildData.subsidy_sats?.toLocaleString()} sats</strong>. Pick a new
+                                payout and rebuild -- watch the verdict flip.
+                              </p>
+                            )}
+                            {selected.editable.type === "hex" && (
+                              <p className="step-hint">
+                                Every node recomputes this from scratch. Only one exact value is
+                                accepted -- everything else, even a single flipped character, is
+                                rejected. The correct value is <code>{buildData.hint_value}</code>.
+                              </p>
+                            )}
+                            {selected.editable.type === "choice" && (
+                              <p className="step-hint">
+                                One of these is genuinely still spendable, one was already spent in this
+                                chain. Pick either and rebuild to compare.
+                              </p>
+                            )}
+                            <div className="editable-row">
+                              {selected.editable.type === "choice" ? (
+                                <select
+                                  className="editable-input"
+                                  value={overrideValue}
+                                  onChange={(e) => setOverrideValue(e.target.value)}
+                                >
+                                  {selected.editable.options.map((o) => (
+                                    <option key={o.value} value={o.value}>
+                                      {o.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <input
+                                  type={selected.editable.type === "hex" ? "text" : "number"}
+                                  className="editable-input"
+                                  min={selected.editable.min}
+                                  max={selected.editable.max}
+                                  step={selected.editable.step}
+                                  maxLength={selected.editable.length}
+                                  spellCheck={false}
+                                  value={overrideValue}
+                                  onChange={(e) => setOverrideValue(e.target.value)}
+                                />
+                              )}
+                              <button
+                                className="action-btn"
+                                onClick={() => doBuild(overrideValue)}
+                                disabled={overrideValue === ""}
+                              >
+                                Rebuild
+                              </button>
+                            </div>
+                          </div>
                         )}
                       </>
                     )}

@@ -20,7 +20,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "vendor"))
 
 from test_framework.blocktools import add_witness_commitment, create_block, create_coinbase  # noqa: E402
-from test_framework.messages import CTransaction  # noqa: E402
+from test_framework.messages import CTransaction, ser_uint256  # noqa: E402
 
 from node import rpc  # noqa: E402
 
@@ -35,17 +35,21 @@ def _traced_rpc(calls: list, method: str, params: list | None = None):
     return rpc(method, params)
 
 
-def coinbase_oversubsidy() -> dict:
-    """Mint exactly 1 satoshi more than the block subsidy allows."""
+def coinbase_oversubsidy(value_sats: int | None = None) -> dict:
+    """Pay the coinbase output some amount. Defaults to 1 satoshi over the
+    block subsidy; a caller-supplied value_sats lets the UI's "try a
+    different value" knob explore the accept/reject boundary directly.
+    """
     calls = []
     tmpl = _traced_rpc(calls, "getblocktemplate", [{"rules": ["segwit"]}])
 
     valid_coinbase = create_coinbase(height=tmpl["height"])
+    subsidy_sats = valid_coinbase.vout[0].nValue
     baseline_block = create_block(tmpl=tmpl, coinbase=valid_coinbase)
     baseline_block.hashMerkleRoot = baseline_block.calc_merkle_root()
 
     attack_coinbase = create_coinbase(height=tmpl["height"])
-    attack_coinbase.vout[0].nValue += 1
+    attack_coinbase.vout[0].nValue = subsidy_sats + 1 if value_sats is None else value_sats
     attack_block = create_block(tmpl=tmpl, coinbase=attack_coinbase)
     attack_block.hashMerkleRoot = attack_block.calc_merkle_root()
 
@@ -53,58 +57,62 @@ def coinbase_oversubsidy() -> dict:
         "baseline_hex": baseline_block.serialize().hex(),
         "payload_hex": attack_block.serialize().hex(),
         "build_calls": calls,
+        "subsidy_sats": subsidy_sats,
+        "editable_value": attack_coinbase.vout[0].nValue,
     }
 
 
-def bad_merkle_root() -> dict:
-    """A structurally valid block whose merkle root doesn't match its transactions."""
+def bad_merkle_root(merkle_root_hex: str | None = None) -> dict:
+    """A structurally valid block whose merkle root doesn't match its transactions.
+
+    Defaults to flipping a single bit in the correct root. A caller-supplied
+    merkle_root_hex lets the UI's "try a different value" knob prove the
+    root isn't arbitrary -- anything except the one true value gets
+    rejected, and typing the exact value back makes it valid again.
+    """
     calls = []
     tmpl = _traced_rpc(calls, "getblocktemplate", [{"rules": ["segwit"]}])
 
     baseline_block = create_block(tmpl=tmpl)
     baseline_block.hashMerkleRoot = baseline_block.calc_merkle_root()
+    correct_root_hex = ser_uint256(baseline_block.hashMerkleRoot)[::-1].hex()
 
     attack_block = create_block(tmpl=tmpl)
-    attack_block.hashMerkleRoot = attack_block.calc_merkle_root() ^ 1
+    if merkle_root_hex is None:
+        attack_block.hashMerkleRoot = baseline_block.calc_merkle_root() ^ 1
+    else:
+        attack_block.hashMerkleRoot = int.from_bytes(bytes.fromhex(merkle_root_hex)[::-1], "little")
 
     return {
         "baseline_hex": baseline_block.serialize().hex(),
         "payload_hex": attack_block.serialize().hex(),
         "build_calls": calls,
+        "editable_value": ser_uint256(attack_block.hashMerkleRoot)[::-1].hex(),
+        "hint_value": correct_root_hex,
     }
 
 
-def double_spend() -> dict:
-    """Try to re-spend a UTXO that was already consumed by a mined transaction.
-
-    testmempoolaccept alone can't tell "never existed" apart from "already
-    spent" -- both just report missing-inputs. Putting the same tx in a
-    block and proposing it hits ConnectBlock's UTXO-set check instead, which
-    is what actually produces bad-txns-inputs-missingorspent.
-    """
-    calls = []
-    already_spent = FIXTURES["utxos"]["already_spent"]
-    dest = _traced_rpc(calls, "getnewaddress", ["double_spend_dest"])
+def _build_spend_block(calls: list, utxo_key: str):
+    """A block containing one tx that spends the named fixture UTXO."""
+    fixture = FIXTURES["utxos"][utxo_key]
+    dest = _traced_rpc(calls, "getnewaddress", [f"spend_{utxo_key}"])
     fee = 0.0001
-    send_amount = round(already_spent["amount"] - fee, 8)
+    send_amount = round(fixture["amount"] - fee, 8)
 
     raw = _traced_rpc(
         calls,
         "createrawtransaction",
-        [
-            [{"txid": already_spent["txid"], "vout": already_spent["vout"]}],
-            {dest: send_amount},
-        ],
+        [[{"txid": fixture["txid"], "vout": fixture["vout"]}], {dest: send_amount}],
     )
     prevtx = {
-        "txid": already_spent["txid"],
-        "vout": already_spent["vout"],
-        "scriptPubKey": already_spent["scriptPubKey"],
-        "amount": already_spent["amount"],
+        "txid": fixture["txid"],
+        "vout": fixture["vout"],
+        "scriptPubKey": fixture["scriptPubKey"],
+        "amount": fixture["amount"],
     }
     signed = _traced_rpc(calls, "signrawtransactionwithwallet", [raw, [prevtx]])
     if not signed["complete"]:
-        raise RuntimeError(f"double_spend baseline tx failed to sign: {signed}")
+        raise RuntimeError(f"{utxo_key} spend tx failed to sign: {signed}")
 
     tx = CTransaction()
     tx.deserialize(io.BytesIO(bytes.fromhex(signed["hex"])))
@@ -112,11 +120,31 @@ def double_spend() -> dict:
     tmpl = _traced_rpc(calls, "getblocktemplate", [{"rules": ["segwit"]}])
     block = create_block(tmpl=tmpl, txlist=[tx])
     add_witness_commitment(block)
+    return block
+
+
+def double_spend(utxo_key: str | None = None) -> dict:
+    """Try to spend a UTXO. Defaults to "already_spent" -- one that was
+    already consumed by a different transaction mined earlier in this same
+    chain. A caller-supplied utxo_key of "spendable_a" spends a UTXO that's
+    genuinely still free, for direct comparison against the attack.
+
+    testmempoolaccept alone can't tell "never existed" apart from "already
+    spent" -- both just report missing-inputs. Putting the same tx in a
+    block and proposing it hits ConnectBlock's UTXO-set check instead, which
+    is what actually produces bad-txns-inputs-missingorspent.
+    """
+    calls = []
+    chosen_key = utxo_key or "already_spent"
+
+    baseline_block = _build_spend_block(calls, "spendable_a")
+    attack_block = baseline_block if chosen_key == "spendable_a" else _build_spend_block(calls, chosen_key)
 
     return {
-        "baseline_hex": None,
-        "payload_hex": block.serialize().hex(),
+        "baseline_hex": baseline_block.serialize().hex(),
+        "payload_hex": attack_block.serialize().hex(),
         "build_calls": calls,
+        "editable_value": chosen_key,
     }
 
 
