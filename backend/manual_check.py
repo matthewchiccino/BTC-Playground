@@ -1,7 +1,7 @@
 """Plain-script sanity check, no web app: build each attack, submit it,
 print the node's verdict. Run before trusting the FastAPI wrapper.
 """
-from mutations import bad_merkle_root, coinbase_oversubsidy, double_spend
+from mutations import bad_merkle_root, coinbase_oversubsidy, double_spend, dust_output
 from node import rpc
 
 
@@ -11,7 +11,14 @@ def check_block(name: str, hexdata: str):
     print(f"[{name}] {verdict}")
 
 
+def check_tx(name: str, hexdata: str):
+    result = rpc("testmempoolaccept", [[hexdata]])[0]
+    verdict = "accepted (unexpected!)" if result["allowed"] else result["reject-reason"]
+    print(f"[{name}] {verdict}")
+
+
 if __name__ == "__main__":
     check_block("coinbase_oversubsidy", coinbase_oversubsidy()["payload_hex"])
     check_block("bad_merkle_root", bad_merkle_root()["payload_hex"])
     check_block("double_spend", double_spend()["payload_hex"])
+    check_tx("dust_output", dust_output()["payload_hex"])

@@ -148,8 +148,72 @@ def double_spend(utxo_key: str | None = None) -> dict:
     }
 
 
+# A P2WPKH output below this many sats costs more to spend later than it's
+# worth. Verified against src/policy/policy.cpp's GetDustThreshold at the
+# default relay fee -- see sources.py for the permalink.
+DUST_THRESHOLD_SATS = 294
+
+
+def dust_output(value_sats: int | None = None) -> dict:
+    """Spend spendable_a into two identical tiny outputs.
+
+    Core tolerates exactly one dust output per transaction (an "ephemeral
+    dust" allowance for things like fee-bumping) but rejects a transaction
+    the moment it has a second one. With two outputs at the same value, the
+    whole thing hinges on a single number: below the threshold, both are
+    dust and it's rejected; at or above it, neither is, and it's accepted.
+    This is checked in IsStandardTx (mempool policy), not in ConnectBlock --
+    the exact same transaction would be perfectly valid mined into a block.
+    """
+    calls = []
+    spendable = FIXTURES["utxos"]["spendable_a"]
+    fee_sats = 1000
+    chosen_sats = 1 if value_sats is None else value_sats
+
+    def _build(sats: int) -> str:
+        addr_a = _traced_rpc(calls, "getnewaddress", ["dust_a"])
+        addr_b = _traced_rpc(calls, "getnewaddress", ["dust_b"])
+        change_addr = _traced_rpc(calls, "getnewaddress", ["dust_change"])
+
+        spend_sats = round(spendable["amount"] * 100_000_000)
+        change_sats = spend_sats - 2 * sats - fee_sats
+
+        outputs = {
+            addr_a: round(sats / 100_000_000, 8),
+            addr_b: round(sats / 100_000_000, 8),
+            change_addr: round(change_sats / 100_000_000, 8),
+        }
+        raw = _traced_rpc(
+            calls,
+            "createrawtransaction",
+            [[{"txid": spendable["txid"], "vout": spendable["vout"]}], outputs],
+        )
+        prevtx = {
+            "txid": spendable["txid"],
+            "vout": spendable["vout"],
+            "scriptPubKey": spendable["scriptPubKey"],
+            "amount": spendable["amount"],
+        }
+        signed = _traced_rpc(calls, "signrawtransactionwithwallet", [raw, [prevtx]])
+        if not signed["complete"]:
+            raise RuntimeError(f"dust_output tx failed to sign (sats={sats}): {signed}")
+        return signed["hex"]
+
+    baseline_hex = _build(DUST_THRESHOLD_SATS + 1)
+    payload_hex = baseline_hex if chosen_sats == DUST_THRESHOLD_SATS + 1 else _build(chosen_sats)
+
+    return {
+        "baseline_hex": baseline_hex,
+        "payload_hex": payload_hex,
+        "build_calls": calls,
+        "editable_value": chosen_sats,
+        "hint_value": DUST_THRESHOLD_SATS,
+    }
+
+
 MUTATIONS = {
     "coinbase_oversubsidy": coinbase_oversubsidy,
     "bad_merkle_root": bad_merkle_root,
     "double_spend": double_spend,
+    "dust_output": dust_output,
 }

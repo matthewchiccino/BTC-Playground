@@ -79,6 +79,32 @@ SCENARIOS = [
             ],
         },
     },
+    {
+        "id": "dust_output",
+        "title": "Dust Output",
+        "kind": "tx",
+        "fixture_key": "spendable_a",
+        "mutation": "dust_output",
+        "expected_reject_reason": "dust",
+        "rule_type": "policy",
+        "explanation": (
+            "A \"dust\" output is one so small it would cost more in future "
+            "fees to spend than it's worth. Core tolerates exactly one dust "
+            "output per transaction -- a deliberate allowance for things like "
+            "fee-bumping -- but rejects the transaction the moment it has a "
+            "second one. This is purely a relay policy choice, not a "
+            "consensus rule: the exact same transaction would be perfectly "
+            "valid if a miner mined it directly into a block."
+        ),
+        "editable": {
+            "field": "value_sats",
+            "label": "Output value (satoshis)",
+            "type": "int",
+            "min": 1,
+            "max": 2000,
+            "step": 1,
+        },
+    },
 ]
 
 SCENARIOS_BY_ID = {s["id"]: s for s in SCENARIOS}

@@ -63,4 +63,18 @@ SOURCES = {
         ),
         "rule_type": "consensus",
     },
+    "dust": {
+        "file": "src/policy/policy.cpp",
+        "function": "IsStandardTx",
+        "lines": [157, 160],
+        "permalink": _permalink("src/policy/policy.cpp", 157, 160),
+        "snippet": (
+            "// Only MAX_DUST_OUTPUTS_PER_TX dust is permitted(on otherwise valid ephemeral dust)\n"
+            "if (GetDust(tx, dust_relay_fee).size() > MAX_DUST_OUTPUTS_PER_TX) {\n"
+            '    reason = "dust";\n'
+            "    return false;\n"
+            "}"
+        ),
+        "rule_type": "policy",
+    },
 }

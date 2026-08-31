@@ -246,11 +246,20 @@ export default function App() {
                         )}
                         {selected.editable && (
                           <div className="editable-inline">
-                            {selected.editable.type === "int" && (
+                            {selected.editable.type === "int" && selected.id === "coinbase_oversubsidy" && (
                               <p className="step-hint">
                                 Subsidy at this height is{" "}
                                 <strong>{buildData.subsidy_sats?.toLocaleString()} sats</strong>. Pick a new
                                 payout and rebuild -- watch the verdict flip.
+                              </p>
+                            )}
+                            {selected.editable.type === "int" && selected.id === "dust_output" && (
+                              <p className="step-hint">
+                                The dust threshold is{" "}
+                                <strong>{buildData.hint_value?.toLocaleString()} sats</strong>. This tx
+                                creates two identical outputs of your chosen value -- Core allows one
+                                dust output but rejects a second. Pick a value and rebuild to watch the
+                                verdict flip.
                               </p>
                             )}
                             {selected.editable.type === "hex" && (
