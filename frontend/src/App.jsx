@@ -233,14 +233,6 @@ export default function App() {
                         ) : (
                           <DecodedView structured={buildData.payload_structured} />
                         )}
-                        <div className="build-calls">
-                          <span className="build-calls-label">RPC calls used to build this:</span>{" "}
-                          {buildData.build_calls.map((c, i) => (
-                            <code key={i} className="rpc-chip">
-                              {c}
-                            </code>
-                          ))}
-                        </div>
                         {buildData.baseline_hex && (
                           <p className="step-hint diff-hint">
                             <span className="hex-diff-swatch" /> highlighted{" "}
@@ -251,9 +243,8 @@ export default function App() {
                           <div className="editable-inline">
                             <p className="step-hint">
                               Subsidy at this height is{" "}
-                              <strong>{buildData.subsidy_sats?.toLocaleString()} sats</strong>. Pick any{" "}
-                              {selected.editable.label.toLowerCase()} and rebuild -- watch the verdict
-                              flip right at the boundary.
+                              <strong>{buildData.subsidy_sats?.toLocaleString()} sats</strong>. Pick a new
+                              payout and rebuild -- watch the verdict flip.
                             </p>
                             <div className="editable-row">
                               <input

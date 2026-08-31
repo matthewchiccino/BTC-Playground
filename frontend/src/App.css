@@ -511,27 +511,6 @@
   margin: 0 0 12px;
 }
 
-.build-calls {
-  margin-top: 14px;
-  font-size: 12px;
-}
-
-.build-calls-label {
-  color: var(--text-faint);
-}
-
-.rpc-chip {
-  display: inline-block;
-  font-family: var(--mono);
-  font-size: 11px;
-  background: var(--bg-panel-raised);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 2px 6px;
-  margin: 2px 3px 2px 0;
-  color: var(--text-dim);
-}
-
 .json-block {
   font-family: var(--mono);
   font-size: 12.5px;
