@@ -92,16 +92,19 @@ SCENARIOS = [
         "rule_type": "policy",
         "explanation": (
             "A \"dust\" output is one so small it would cost more in future "
-            "fees to spend than it's worth. Core tolerates exactly one dust "
-            "output per transaction -- a deliberate allowance for things like "
-            "fee-bumping, known as ephemeral dust -- but rejects the "
-            "transaction the moment it has a second one. This is purely a "
-            "relay policy choice, not a consensus rule: the exact same "
-            "transaction would be perfectly valid if a miner mined it "
-            "directly into a block."
+            "fees to spend than it's worth. Any transaction that pays a fee "
+            "-- which is almost every real transaction -- gets zero "
+            "tolerance for dust: even one such output gets the whole thing "
+            "rejected. (Core does allow exactly one dust output through a "
+            "narrow exception called {ref}, but only for a completely "
+            "fee-free transaction meant to be cleaned up immediately by a "
+            "follow-up transaction -- not the everyday case this scenario "
+            "shows.) This is purely a relay policy choice, not a consensus "
+            "rule: the exact same transaction would be perfectly valid if a "
+            "miner mined it directly into a block."
         ),
         "reference": {
-            "label": "bitcoin/bitcoin#30239 -- \"Ephemeral Dust\"",
+            "label": "ephemeral dust",
             "url": "https://github.com/bitcoin/bitcoin/pull/30239",
         },
         "editable": {

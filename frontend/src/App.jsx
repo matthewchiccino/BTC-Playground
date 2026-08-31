@@ -56,6 +56,20 @@ function RuleTypeBadge({ ruleType }) {
   return <span className={`rule-type-badge ${ruleType}`}>{ruleType} rule</span>;
 }
 
+function Explanation({ text, reference }) {
+  if (!reference) return <p className="explanation">{text}</p>;
+  const [before, after] = text.split("{ref}");
+  return (
+    <p className="explanation">
+      {before}
+      <a href={reference.url} target="_blank" rel="noreferrer" className="inline-ref-link">
+        {reference.label}
+      </a>
+      {after}
+    </p>
+  );
+}
+
 export default function App() {
   const [scenarios, setScenarios] = useState([]);
   const [view, setView] = useState("home"); // "home" | "scenario"
@@ -187,12 +201,7 @@ export default function App() {
             <>
               <div className="scenario-header">
                 <h2>{selected.title}</h2>
-                <p className="explanation">{selected.explanation}</p>
-                {selected.reference && (
-                  <a className="reference-link" href={selected.reference.url} target="_blank" rel="noreferrer">
-                    {selected.reference.label} &rarr;
-                  </a>
-                )}
+                <Explanation text={selected.explanation} reference={selected.reference} />
               </div>
 
               <StepTracker stage={stage} />
@@ -262,9 +271,8 @@ export default function App() {
                               <p className="step-hint">
                                 The dust threshold is{" "}
                                 <strong>{buildData.hint_value?.toLocaleString()} sats</strong>. This tx
-                                creates two identical outputs of your chosen value -- Core allows one
-                                dust output but rejects a second. Pick a value and rebuild to watch the
-                                verdict flip.
+                                pays an ordinary fee, so it can't carry a dust output at all. Pick a
+                                value and rebuild to watch the verdict flip right at the line.
                               </p>
                             )}
                             {selected.editable.type === "hex" && (

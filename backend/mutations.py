@@ -155,15 +155,16 @@ DUST_THRESHOLD_SATS = 294
 
 
 def dust_output(value_sats: int | None = None) -> dict:
-    """Spend spendable_a into two identical tiny outputs.
+    """Spend spendable_a into one caller-controlled output plus change.
 
-    Core tolerates exactly one dust output per transaction (an "ephemeral
-    dust" allowance for things like fee-bumping) but rejects a transaction
-    the moment it has a second one. With two outputs at the same value, the
-    whole thing hinges on a single number: below the threshold, both are
-    dust and it's rejected; at or above it, neither is, and it's accepted.
-    This is checked in IsStandardTx (mempool policy), not in ConnectBlock --
-    the exact same transaction would be perfectly valid mined into a block.
+    Checked empirically, not assumed: Core's "ephemeral dust" allowance
+    (one tolerated dust output per tx) only applies to a completely
+    0-fee transaction, meant to be paired with a follow-up transaction
+    that immediately spends the dust and pays for both (see
+    PreCheckEphemeralTx in src/policy/ephemeral_policy.cpp). This
+    transaction pays an ordinary fee, like almost every real transaction
+    -- and once any fee is present, Core tolerates zero dust outputs, not
+    one. That's the rule this scenario actually demonstrates.
     """
     calls = []
     spendable = FIXTURES["utxos"]["spendable_a"]
@@ -171,16 +172,14 @@ def dust_output(value_sats: int | None = None) -> dict:
     chosen_sats = 1 if value_sats is None else value_sats
 
     def _build(sats: int) -> str:
-        addr_a = _traced_rpc(calls, "getnewaddress", ["dust_a"])
-        addr_b = _traced_rpc(calls, "getnewaddress", ["dust_b"])
+        addr = _traced_rpc(calls, "getnewaddress", ["dust_output"])
         change_addr = _traced_rpc(calls, "getnewaddress", ["dust_change"])
 
         spend_sats = round(spendable["amount"] * 100_000_000)
-        change_sats = spend_sats - 2 * sats - fee_sats
+        change_sats = spend_sats - sats - fee_sats
 
         outputs = {
-            addr_a: round(sats / 100_000_000, 8),
-            addr_b: round(sats / 100_000_000, 8),
+            addr: round(sats / 100_000_000, 8),
             change_addr: round(change_sats / 100_000_000, 8),
         }
         raw = _traced_rpc(
