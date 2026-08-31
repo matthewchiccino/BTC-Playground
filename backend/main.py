@@ -65,9 +65,12 @@ BUILD_ID_PATTERN = r"^[A-Za-z0-9_-]{16,64}$"
 class ScenarioRequest(BaseModel):
     model_config = {"extra": "forbid"}
     scenario_id: str = Field(pattern=SCENARIO_ID_PATTERN)
-    # Coarse schema-level bound; the real min/max for the scenario's
-    # editable field (from scenarios.py) is enforced in the handler.
+    # One optional override per editable field type. Coarse schema-level
+    # bounds/patterns here; the real per-scenario min/max/options (from
+    # scenarios.py) are enforced in the handler.
     override_value_sats: int | None = Field(default=None, ge=0, le=100_000_000_000)
+    override_hex: str | None = Field(default=None, pattern=r"^[0-9a-fA-F]{64}$")
+    override_choice: str | None = Field(default=None, pattern=r"^[a-z][a-z0-9_]{0,63}$")
 
 
 class SubmitRequest(BaseModel):
@@ -101,16 +104,35 @@ def build_scenario(req: ScenarioRequest):
         raise HTTPException(status_code=404, detail=f"unknown scenario_id: {req.scenario_id}")
 
     editable = scenario.get("editable")
+    overrides = {
+        "int": req.override_value_sats,
+        "hex": req.override_hex,
+        "choice": req.override_choice,
+    }
+    provided = [(t, v) for t, v in overrides.items() if v is not None]
+
     kwargs = {}
-    if req.override_value_sats is not None:
+    if provided:
+        if len(provided) > 1:
+            raise HTTPException(status_code=422, detail="only one override field may be set")
         if not editable:
             raise HTTPException(status_code=400, detail=f"scenario {scenario['id']} has no editable field")
-        if not (editable["min"] <= req.override_value_sats <= editable["max"]):
+        override_type, override_value = provided[0]
+        if override_type != editable["type"]:
+            raise HTTPException(
+                status_code=422,
+                detail=f"scenario {scenario['id']} expects a {editable['type']}-type override",
+            )
+        if override_type == "int" and not (editable["min"] <= override_value <= editable["max"]):
             raise HTTPException(
                 status_code=422,
                 detail=f"{editable['field']} must be between {editable['min']} and {editable['max']}",
             )
-        kwargs[editable["field"]] = req.override_value_sats
+        if override_type == "choice":
+            valid_values = {o["value"] for o in editable["options"]}
+            if override_value not in valid_values:
+                raise HTTPException(status_code=422, detail=f"{editable['field']} must be one of {sorted(valid_values)}")
+        kwargs[editable["field"]] = override_value
 
     try:
         result = MUTATIONS[scenario["mutation"]](**kwargs)
@@ -132,6 +154,7 @@ def build_scenario(req: ScenarioRequest):
         "editable": editable,
         "subsidy_sats": result.get("subsidy_sats"),
         "editable_value": result.get("editable_value"),
+        "hint_value": result.get("hint_value"),
     }
 
 

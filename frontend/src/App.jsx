@@ -94,14 +94,19 @@ export default function App() {
     setView("home");
   }
 
-  async function doBuild(overrideSats) {
-    const isRebuild = overrideSats !== undefined;
+  async function doBuild(overrideVal) {
+    const isRebuild = overrideVal !== undefined;
     setStage(isRebuild ? "built" : "building");
     setError(null);
     if (isRebuild) setSubmitData(null);
     try {
       const body = { scenario_id: selectedId };
-      if (isRebuild) body.override_value_sats = overrideSats;
+      if (isRebuild) {
+        const type = selected.editable.type;
+        if (type === "int") body.override_value_sats = Number(overrideVal);
+        else if (type === "hex") body.override_hex = overrideVal;
+        else if (type === "choice") body.override_choice = overrideVal;
+      }
       const res = await fetch(`${API_BASE}/build`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -241,24 +246,55 @@ export default function App() {
                         )}
                         {selected.editable && (
                           <div className="editable-inline">
-                            <p className="step-hint">
-                              Subsidy at this height is{" "}
-                              <strong>{buildData.subsidy_sats?.toLocaleString()} sats</strong>. Pick a new
-                              payout and rebuild -- watch the verdict flip.
-                            </p>
+                            {selected.editable.type === "int" && (
+                              <p className="step-hint">
+                                Subsidy at this height is{" "}
+                                <strong>{buildData.subsidy_sats?.toLocaleString()} sats</strong>. Pick a new
+                                payout and rebuild -- watch the verdict flip.
+                              </p>
+                            )}
+                            {selected.editable.type === "hex" && (
+                              <p className="step-hint">
+                                Every node recomputes this from scratch. Only one exact value is
+                                accepted -- everything else, even a single flipped character, is
+                                rejected. The correct value is <code>{buildData.hint_value}</code>.
+                              </p>
+                            )}
+                            {selected.editable.type === "choice" && (
+                              <p className="step-hint">
+                                One of these is genuinely still spendable, one was already spent in this
+                                chain. Pick either and rebuild to compare.
+                              </p>
+                            )}
                             <div className="editable-row">
-                              <input
-                                type="number"
-                                className="editable-input"
-                                min={selected.editable.min}
-                                max={selected.editable.max}
-                                step={selected.editable.step}
-                                value={overrideValue}
-                                onChange={(e) => setOverrideValue(e.target.value)}
-                              />
+                              {selected.editable.type === "choice" ? (
+                                <select
+                                  className="editable-input"
+                                  value={overrideValue}
+                                  onChange={(e) => setOverrideValue(e.target.value)}
+                                >
+                                  {selected.editable.options.map((o) => (
+                                    <option key={o.value} value={o.value}>
+                                      {o.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <input
+                                  type={selected.editable.type === "hex" ? "text" : "number"}
+                                  className="editable-input"
+                                  min={selected.editable.min}
+                                  max={selected.editable.max}
+                                  step={selected.editable.step}
+                                  maxLength={selected.editable.length}
+                                  spellCheck={false}
+                                  value={overrideValue}
+                                  onChange={(e) => setOverrideValue(e.target.value)}
+                                />
+                              )}
                               <button
                                 className="action-btn"
-                                onClick={() => doBuild(Number(overrideValue))}
+                                onClick={() => doBuild(overrideValue)}
                                 disabled={overrideValue === ""}
                               >
                                 Rebuild
