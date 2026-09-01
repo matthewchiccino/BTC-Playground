@@ -78,6 +78,22 @@ class SubmitRequest(BaseModel):
     build_id: str = Field(pattern=BUILD_ID_PATTERN)
 
 
+@app.get("/health")
+def health():
+    """Liveness probe, not user-facing: attempts one cheap RPC call and
+    returns 200/503. No rate limit -- a container orchestrator hits this
+    every ~30s for the life of the process, and rate-limiting it defeats
+    the point of a restart-on-failure policy. Deliberately separate from
+    /node-status, which is rate-limited, richer, and meant for the UI.
+    """
+    try:
+        rpc("getblockcount", wallet=None)
+    except Exception:
+        logger.exception("health check RPC failed")
+        raise HTTPException(status_code=503, detail="node unreachable")
+    return {"status": "ok"}
+
+
 @app.get("/scenarios", dependencies=[Depends(limit_status)])
 def list_scenarios():
     return SCENARIOS
