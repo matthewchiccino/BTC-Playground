@@ -25,7 +25,8 @@ Run these once.
 # 1. Python environment + backend deps
 python3 -m venv .venv
 source .venv/bin/activate
-pip install fastapi uvicorn requests pytest
+pip install -r backend/requirements.txt
+pip install pytest   # only needed for the sanity checks below, not the app itself
 
 # 2. Frontend deps
 npm install --prefix frontend
@@ -85,6 +86,30 @@ cd backend
 python3 manual_check.py   # prints each scenario's verdict
 python3 -m pytest test_scenarios.py -v   # asserts verdicts match the catalog
 python3 -m pytest test_sources.py -v     # asserts sources.py still cites real lines
+```
+
+## Running it as one container
+
+`Dockerfile` builds a single image with bitcoind, the backend, and the built
+frontend, all served through Caddy on one port -- no separate dev servers,
+no CORS (frontend and API are same-origin behind Caddy's `/api/*` proxy).
+
+```bash
+docker build -t btc-playground .
+docker run -d -p 8080:8080 --name btc-playground btc-playground
+```
+
+Then open **http://localhost:8080**. `PORT` is configurable (defaults to
+8080; set `-e PORT=3000 -p 3000:3000` etc. to change it).
+
+The chain is re-mined from scratch on every boot -- there's no persistent
+volume for the bitcoin datadir, by design (see `setup_chain.py` and
+`entrypoint.sh`). That's what makes it safe for an orchestrator to just
+restart the whole container on a failed `/api/health` check, instead of
+needing anything smarter.
+
+```bash
+docker stop btc-playground && docker rm btc-playground   # tear down
 ```
 
 ## Keeping `sources.py` honest
