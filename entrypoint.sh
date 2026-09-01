@@ -17,6 +17,19 @@ DATADIR=/data/bitcoin-regtest
 mkdir -p "$DATADIR"
 CONF="/app/regtest.conf"
 
+# regtest.conf deliberately carries no rpcuser/rpcpassword (see its own
+# comment) -- a committed credential looks careless even for a
+# loopback-only node. Generate one fresh every boot unless the operator
+# supplied their own via env (e.g. a compose secret), and export it so
+# node.py -- which already reads these same var names -- picks it up for
+# every RPC call uvicorn makes.
+export BTC_RPC_USER="${BTC_RPC_USER:-btcplayground}"
+if [ -z "${BTC_RPC_PASSWORD:-}" ]; then
+    export BTC_RPC_PASSWORD="$(head -c 32 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 32)"
+    echo "entrypoint: generated a random RPC password (set BTC_RPC_PASSWORD to supply your own)."
+fi
+AUTH=(-rpcuser="$BTC_RPC_USER" -rpcpassword="$BTC_RPC_PASSWORD")
+
 cleanup() {
     echo "entrypoint: shutting down..."
     kill -TERM "$BITCOIND_PID" "$UVICORN_PID" "$CADDY_PID" 2>/dev/null || true
@@ -25,13 +38,13 @@ cleanup() {
 }
 trap cleanup SIGTERM SIGINT
 
-bitcoind -regtest -conf="$CONF" -datadir="$DATADIR" &
+bitcoind -regtest -conf="$CONF" -datadir="$DATADIR" "${AUTH[@]}" &
 BITCOIND_PID=$!
 
 echo "entrypoint: waiting for bitcoind RPC..."
 ready=0
 for i in $(seq 1 60); do
-    if bitcoin-cli -regtest -conf="$CONF" -datadir="$DATADIR" getblockchaininfo >/dev/null 2>&1; then
+    if bitcoin-cli -regtest -conf="$CONF" -datadir="$DATADIR" "${AUTH[@]}" getblockchaininfo >/dev/null 2>&1; then
         ready=1
         break
     fi
@@ -49,6 +62,8 @@ cd /app
 
 # Bound to localhost only -- caddy is the sole thing that reaches
 # uvicorn; it is never exposed on the container's own external port.
+# BTC_RPC_USER/BTC_RPC_PASSWORD are already exported above, so node.py
+# picks them up without any further plumbing.
 uvicorn main:app --app-dir backend --host 127.0.0.1 --port 8000 &
 UVICORN_PID=$!
 
