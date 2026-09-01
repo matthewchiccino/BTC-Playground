@@ -58,9 +58,24 @@ def main():
         "address": addr_b,
     }
 
+    # Spend txid_b:vout_b specifically -- sendtoaddress would run automatic
+    # coin selection and could just as easily pick a coinbase output or
+    # spendable_a instead, leaving this fixture silently NOT double-spent.
+    # Pin the input explicitly so this is deterministic, not "whatever this
+    # Core version's selector happens to prefer today."
     spend_addr = rpc("getnewaddress", ["spend_sink"])
-    rpc("sendtoaddress", [spend_addr, 0.5])
+    raw = rpc(
+        "createrawtransaction",
+        [[{"txid": txid_b, "vout": vout_b}], {spend_addr: round(utxo_b["value"] - 0.0001, 8)}],
+    )
+    signed = rpc("signrawtransactionwithwallet", [raw])
+    rpc("sendrawtransaction", [signed["hex"]])
     rpc("generatetoaddress", [1, mining_address])
+
+    if rpc("gettxout", [txid_b, vout_b]) is not None:
+        raise RuntimeError("already_spent fixture is not actually spent")
+    if rpc("gettxout", [txid_a, vout_a]) is None:
+        raise RuntimeError("spendable_a got consumed during setup")
 
     already_spent = already_spent_fixture
 
