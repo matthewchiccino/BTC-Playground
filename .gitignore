@@ -7,3 +7,5 @@ backend/fixtures.json
 node_debug.log
 .DS_Store
 node_modules/
+backend/sources_candidates.json
+backend/.sources_cache/

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import "./App.css";
+import AboutApproach from "./AboutApproach";
+import AboutNode from "./AboutNode";
 import DecodedView from "./DecodedView";
 import HexDiff from "./HexDiff";
 import HomePage from "./HomePage";
@@ -56,9 +58,23 @@ function RuleTypeBadge({ ruleType }) {
   return <span className={`rule-type-badge ${ruleType}`}>{ruleType} rule</span>;
 }
 
+function Explanation({ text, reference }) {
+  if (!reference) return <p className="explanation">{text}</p>;
+  const [before, after] = text.split("{ref}");
+  return (
+    <p className="explanation">
+      {before}
+      <a href={reference.url} target="_blank" rel="noreferrer" className="inline-ref-link">
+        {reference.label}
+      </a>
+      {after}
+    </p>
+  );
+}
+
 export default function App() {
   const [scenarios, setScenarios] = useState([]);
-  const [view, setView] = useState("home"); // "home" | "scenario"
+  const [view, setView] = useState("home"); // "home" | "scenario" | "about-node" | "about-approach"
   const [selectedId, setSelectedId] = useState(null);
   const [stage, setStage] = useState("selected"); // selected -> building -> built -> submitting -> response -> revealed
   const [buildData, setBuildData] = useState(null);
@@ -92,6 +108,10 @@ export default function App() {
 
   function goHome() {
     setView("home");
+  }
+
+  function goAbout(page) {
+    setView(page); // "about-node" | "about-approach"
   }
 
   async function doBuild(overrideVal) {
@@ -156,9 +176,23 @@ export default function App() {
       </div>
       <div className="layout">
         <div className="sidebar">
+          <div className="sidebar-label">About</div>
           <button className={`nav-home ${view === "home" ? "active" : ""}`} onClick={goHome}>
             Home
           </button>
+          <button
+            className={`nav-home ${view === "about-node" ? "active" : ""}`}
+            onClick={() => goAbout("about-node")}
+          >
+            The Node
+          </button>
+          <button
+            className={`nav-home ${view === "about-approach" ? "active" : ""}`}
+            onClick={() => goAbout("about-approach")}
+          >
+            The Source Map
+          </button>
+
           <div className="sidebar-label">Scenarios</div>
           {scenarios.map((s) => (
             <button
@@ -175,6 +209,8 @@ export default function App() {
           {error && <div className="error-banner">{error}</div>}
 
           {view === "home" && <HomePage scenarios={scenarios} onSelectScenario={selectScenario} />}
+          {view === "about-node" && <AboutNode />}
+          {view === "about-approach" && <AboutApproach />}
 
           {view === "scenario" && !selected && !error && (
             <p className="empty-state">
@@ -187,7 +223,7 @@ export default function App() {
             <>
               <div className="scenario-header">
                 <h2>{selected.title}</h2>
-                <p className="explanation">{selected.explanation}</p>
+                <Explanation text={selected.explanation} reference={selected.reference} />
               </div>
 
               <StepTracker stage={stage} />
@@ -246,11 +282,35 @@ export default function App() {
                         )}
                         {selected.editable && (
                           <div className="editable-inline">
-                            {selected.editable.type === "int" && (
+                            {selected.editable.type === "int" && selected.id === "coinbase_oversubsidy" && (
                               <p className="step-hint">
                                 Subsidy at this height is{" "}
                                 <strong>{buildData.subsidy_sats?.toLocaleString()} sats</strong>. Pick a new
                                 payout and rebuild -- watch the verdict flip.
+                              </p>
+                            )}
+                            {selected.editable.type === "int" && selected.id === "dust_output" && (
+                              <p className="step-hint">
+                                The dust threshold is{" "}
+                                <strong>{buildData.hint_value?.toLocaleString()} sats</strong>. This tx
+                                pays an ordinary fee, so it can't carry a dust output at all. Pick a
+                                value and rebuild to watch the verdict flip right at the line.
+                              </p>
+                            )}
+                            {selected.editable.type === "int" && selected.id === "fee_too_low" && (
+                              <p className="step-hint">
+                                This transaction needs at least{" "}
+                                <strong>{buildData.hint_value?.toLocaleString()} sats</strong> to clear
+                                this node's relay floor, given its size. Pick a fee and rebuild to
+                                watch the verdict flip right at the line.
+                              </p>
+                            )}
+                            {selected.editable.type === "int" && selected.id === "coinbase_maturity" && (
+                              <p className="step-hint">
+                                A coinbase reward needs{" "}
+                                <strong>{buildData.hint_value} confirmations</strong> before it's
+                                spendable. Pick a confirmation count and rebuild to watch the verdict
+                                flip right at the line.
                               </p>
                             )}
                             {selected.editable.type === "hex" && (
@@ -269,7 +329,7 @@ export default function App() {
                             <div className="editable-row">
                               {selected.editable.type === "choice" ? (
                                 <select
-                                  className="editable-input"
+                                  className="editable-input editable-input-medium"
                                   value={overrideValue}
                                   onChange={(e) => setOverrideValue(e.target.value)}
                                 >
@@ -282,7 +342,7 @@ export default function App() {
                               ) : (
                                 <input
                                   type={selected.editable.type === "hex" ? "text" : "number"}
-                                  className="editable-input"
+                                  className={`editable-input ${selected.editable.type === "int" ? "editable-input-narrow" : ""}`}
                                   min={selected.editable.min}
                                   max={selected.editable.max}
                                   step={selected.editable.step}
@@ -386,6 +446,26 @@ export default function App() {
                               </a>
                             </div>
                             <pre className="source-snippet">{submitData.source.snippet}</pre>
+                            {submitData.source.also_produced_by?.length > 0 && (
+                              <details className="source-also">
+                                <summary>
+                                  Also produced by {submitData.source.also_produced_by.length} other site(s)
+                                </summary>
+                                {submitData.source.also_produced_by.map((alt) => (
+                                  <div className="source-also-item" key={alt.permalink}>
+                                    <div className="source-location">
+                                      <strong>{alt.file}</strong> &middot; {alt.function} &middot; lines{" "}
+                                      {alt.lines[0]}-{alt.lines[1]}
+                                      <br />
+                                      <a href={alt.permalink} target="_blank" rel="noreferrer">
+                                        view on GitHub &rarr;
+                                      </a>
+                                    </div>
+                                    <p className="source-also-note">{alt.note}</p>
+                                  </div>
+                                ))}
+                              </details>
+                            )}
                           </>
                         ) : (
                           <p className="source-empty">No mapped source location for this verdict.</p>

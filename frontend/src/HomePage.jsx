@@ -6,15 +6,14 @@ export default function HomePage({ scenarios, onSelectScenario }) {
       <p className="home-lede">Break Bitcoin's consensus rules on purpose.</p>
 
       <p className="home-copy">
-        Bitcoin Core constatnly rejects invalid blocks and transactions. By learning seeing how and why,
+        Bitcoin Core constatnly rejects invalid blocks and transactions. By seeing how and why,
         we can understand the bitcoin protocal much better from a operational and implementational level.
-        This is an interactive sandbox that builds deliberately invalid attacks and submits them to a 
-        real live regtest Bitcoin Core node, so you can see exactly which line of code catches it.
+        This is an sandbox environment that builds intentionally invalid attacks and submits them to a 
+        real Bitcoin node, so you can see exactly which line of code catches it.
       </p>
       <p className="home-copy">
-        Nothing here is simulated. Every scenario runs against a real <code>bitcoind</code> process
-        using read-only RPC calls so nothing is ever actually broadcast or mined. The chain is 
-        frozen; state never changes, which is what lets everyone share one node safely.
+        Nothing here is simulated. Each scenario runs against a real <code>bitcoind</code> process
+        using read-only RPC calls. The chain is frozen so that everyone can share this one node.
       </p>
 
       <h3 className="home-subhead">How to use it</h3>
@@ -51,6 +50,13 @@ export default function HomePage({ scenarios, onSelectScenario }) {
           </button>
         ))}
       </div>
+
+      <p className="home-footer">
+        Built and owned by Matthew Chiccino &middot;{" "}
+        <a href="https://github.com/matthewchiccino/BTC-Playground" target="_blank" rel="noreferrer">
+          github.com/matthewchiccino/BTC-Playground
+        </a>
+      </p>
     </div>
   );
 }

@@ -14,6 +14,7 @@ rather than hand-rolling serialization (see plam.md section 4.2).
 """
 import io
 import json
+import math
 import os
 import sys
 
@@ -148,8 +149,195 @@ def double_spend(utxo_key: str | None = None) -> dict:
     }
 
 
+# A P2WPKH output below this many sats costs more to spend later than it's
+# worth. Verified against src/policy/policy.cpp's GetDustThreshold at the
+# default relay fee -- see sources.py for the permalink.
+DUST_THRESHOLD_SATS = 294
+
+
+def dust_output(value_sats: int | None = None) -> dict:
+    """Spend spendable_a into one caller-controlled output plus change.
+
+    Checked empirically, not assumed: Core's "ephemeral dust" allowance
+    (one tolerated dust output per tx) only applies to a completely
+    0-fee transaction, meant to be paired with a follow-up transaction
+    that immediately spends the dust and pays for both (see
+    PreCheckEphemeralTx in src/policy/ephemeral_policy.cpp). This
+    transaction pays an ordinary fee, like almost every real transaction
+    -- and once any fee is present, Core tolerates zero dust outputs, not
+    one. That's the rule this scenario actually demonstrates.
+    """
+    calls = []
+    spendable = FIXTURES["utxos"]["spendable_a"]
+    fee_sats = 1000
+    chosen_sats = 1 if value_sats is None else value_sats
+
+    def _build(sats: int) -> str:
+        addr = _traced_rpc(calls, "getnewaddress", ["dust_output"])
+        change_addr = _traced_rpc(calls, "getnewaddress", ["dust_change"])
+
+        spend_sats = round(spendable["amount"] * 100_000_000)
+        change_sats = spend_sats - sats - fee_sats
+
+        outputs = {
+            addr: round(sats / 100_000_000, 8),
+            change_addr: round(change_sats / 100_000_000, 8),
+        }
+        raw = _traced_rpc(
+            calls,
+            "createrawtransaction",
+            [[{"txid": spendable["txid"], "vout": spendable["vout"]}], outputs],
+        )
+        prevtx = {
+            "txid": spendable["txid"],
+            "vout": spendable["vout"],
+            "scriptPubKey": spendable["scriptPubKey"],
+            "amount": spendable["amount"],
+        }
+        signed = _traced_rpc(calls, "signrawtransactionwithwallet", [raw, [prevtx]])
+        if not signed["complete"]:
+            raise RuntimeError(f"dust_output tx failed to sign (sats={sats}): {signed}")
+        return signed["hex"]
+
+    baseline_hex = _build(DUST_THRESHOLD_SATS + 1)
+    payload_hex = baseline_hex if chosen_sats == DUST_THRESHOLD_SATS + 1 else _build(chosen_sats)
+
+    return {
+        "baseline_hex": baseline_hex,
+        "payload_hex": payload_hex,
+        "build_calls": calls,
+        "editable_value": chosen_sats,
+        "hint_value": DUST_THRESHOLD_SATS,
+    }
+
+
+def fee_too_low(fee_sats: int | None = None) -> dict:
+    """Spend spendable_a paying a caller-chosen fee.
+
+    Checked against the live node, not assumed: below the node's relay fee
+    floor (mempoolminfee/minrelaytxfee, ~0.1 sat/vbyte here on a quiet
+    regtest node), MemPoolAccept::CheckFeeRate rejects the transaction
+    outright with "min relay fee not met" -- before it's ever added to the
+    mempool. Like dust, this is enforced only at the mempool/relay layer,
+    not in ConnectBlock: a miner could include a 0-fee transaction in a
+    block and it would be perfectly consensus-valid.
+    """
+    calls = []
+    spendable = FIXTURES["utxos"]["spendable_a"]
+    chosen_fee = 1 if fee_sats is None else fee_sats
+
+    def _build(fee: int) -> str:
+        addr = _traced_rpc(calls, "getnewaddress", ["fee_test"])
+        spend_sats = round(spendable["amount"] * 100_000_000)
+        send_sats = spend_sats - fee
+
+        raw = _traced_rpc(
+            calls,
+            "createrawtransaction",
+            [[{"txid": spendable["txid"], "vout": spendable["vout"]}], {addr: round(send_sats / 100_000_000, 8)}],
+        )
+        prevtx = {
+            "txid": spendable["txid"],
+            "vout": spendable["vout"],
+            "scriptPubKey": spendable["scriptPubKey"],
+            "amount": spendable["amount"],
+        }
+        signed = _traced_rpc(calls, "signrawtransactionwithwallet", [raw, [prevtx]])
+        if not signed["complete"]:
+            raise RuntimeError(f"fee_too_low tx failed to sign (fee={fee}): {signed}")
+        return signed["hex"]
+
+    baseline_hex = _build(1000)  # comfortably above the relay floor
+    payload_hex = baseline_hex if chosen_fee == 1000 else _build(chosen_fee)
+
+    # The relay floor is a feerate, not a flat number -- compute the actual
+    # minimum fee for THIS specific payload's real (signature-dependent)
+    # size, rather than hardcoding a threshold that would silently drift.
+    vsize = _traced_rpc(calls, "decoderawtransaction", [payload_hex])["vsize"]
+    minrelay_btc_per_kvb = _traced_rpc(calls, "getmempoolinfo")["minrelaytxfee"]
+    min_fee_sats = math.ceil(minrelay_btc_per_kvb * 100_000_000 * vsize / 1000)
+
+    return {
+        "baseline_hex": baseline_hex,
+        "payload_hex": payload_hex,
+        "build_calls": calls,
+        "editable_value": chosen_fee,
+        "hint_value": min_fee_sats,
+    }
+
+
+COINBASE_MATURITY = 100
+
+
+def _spend_coinbase_block(calls: list, confirmations: int):
+    # nSpendHeight (one past the frozen tip) minus the coinbase's own height
+    # is exactly "confirmations" -- so this is a direct, literal translation,
+    # not an approximation.
+    height = FIXTURES["frozen_tip_height"] - confirmations + 1
+    blockhash = _traced_rpc(calls, "getblockhash", [height])
+    block = _traced_rpc(calls, "getblock", [blockhash, 2])
+    coinbase = block["tx"][0]
+    vout0 = coinbase["vout"][0]
+
+    dest = _traced_rpc(calls, "getnewaddress", [f"spend_cb_{height}"])
+    fee_btc = 0.0001
+    send_amount = round(vout0["value"] - fee_btc, 8)
+    raw = _traced_rpc(
+        calls,
+        "createrawtransaction",
+        [[{"txid": coinbase["txid"], "vout": 0}], {dest: send_amount}],
+    )
+    prevtx = {
+        "txid": coinbase["txid"],
+        "vout": 0,
+        "scriptPubKey": vout0["scriptPubKey"]["hex"],
+        "amount": vout0["value"],
+    }
+    signed = _traced_rpc(calls, "signrawtransactionwithwallet", [raw, [prevtx]])
+    if not signed["complete"]:
+        raise RuntimeError(f"coinbase_maturity tx failed to sign (confirmations={confirmations}): {signed}")
+
+    tx = CTransaction()
+    tx.deserialize(io.BytesIO(bytes.fromhex(signed["hex"])))
+
+    tmpl = _traced_rpc(calls, "getblocktemplate", [{"rules": ["segwit"]}])
+    block_out = create_block(tmpl=tmpl, txlist=[tx])
+    add_witness_commitment(block_out)
+    return block_out
+
+
+def coinbase_maturity(confirmations: int | None = None) -> dict:
+    """Try to spend a coinbase reward that only has some number of
+    confirmations.
+
+    Consensus::CheckTxInputs (the same function that produces
+    bad-txns-inputs-missingorspent for Double Spend) also enforces
+    coinbase maturity: nSpendHeight - coin.nHeight < COINBASE_MATURITY.
+    That left-hand side is exactly the coinbase's confirmation count, so
+    the editable value here maps onto Core's own check with no
+    translation needed. Default attacks a coinbase with just 1
+    confirmation; the baseline uses exactly 100, the real boundary.
+    """
+    calls = []
+    chosen_confs = 1 if confirmations is None else confirmations
+
+    baseline_block = _spend_coinbase_block(calls, COINBASE_MATURITY)
+    attack_block = baseline_block if chosen_confs == COINBASE_MATURITY else _spend_coinbase_block(calls, chosen_confs)
+
+    return {
+        "baseline_hex": baseline_block.serialize().hex(),
+        "payload_hex": attack_block.serialize().hex(),
+        "build_calls": calls,
+        "editable_value": chosen_confs,
+        "hint_value": COINBASE_MATURITY,
+    }
+
+
 MUTATIONS = {
     "coinbase_oversubsidy": coinbase_oversubsidy,
     "bad_merkle_root": bad_merkle_root,
     "double_spend": double_spend,
+    "dust_output": dust_output,
+    "fee_too_low": fee_too_low,
+    "coinbase_maturity": coinbase_maturity,
 }
