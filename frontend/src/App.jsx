@@ -176,22 +176,10 @@ export default function App() {
       </div>
       <div className="layout">
         <div className="sidebar">
+          <div className="sidebar-label">About</div>
           <button className={`nav-home ${view === "home" ? "active" : ""}`} onClick={goHome}>
             Home
           </button>
-          <div className="sidebar-label">Scenarios</div>
-          {scenarios.map((s) => (
-            <button
-              key={s.id}
-              className={`scenario-btn ${view === "scenario" && s.id === selectedId ? "active" : ""}`}
-              onClick={() => selectScenario(s.id)}
-            >
-              <span className="title">{s.title}</span>
-              <span className="kind">{s.kind}</span>
-            </button>
-          ))}
-
-          <div className="sidebar-label">About</div>
           <button
             className={`nav-home ${view === "about-node" ? "active" : ""}`}
             onClick={() => goAbout("about-node")}
@@ -204,6 +192,18 @@ export default function App() {
           >
             The Source Map
           </button>
+
+          <div className="sidebar-label">Scenarios</div>
+          {scenarios.map((s) => (
+            <button
+              key={s.id}
+              className={`scenario-btn ${view === "scenario" && s.id === selectedId ? "active" : ""}`}
+              onClick={() => selectScenario(s.id)}
+            >
+              <span className="title">{s.title}</span>
+              <span className="kind">{s.kind}</span>
+            </button>
+          ))}
         </div>
         <div className="main">
           {error && <div className="error-banner">{error}</div>}

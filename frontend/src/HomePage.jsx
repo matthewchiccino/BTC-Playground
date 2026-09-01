@@ -51,6 +51,13 @@ export default function HomePage({ scenarios, onSelectScenario }) {
           </button>
         ))}
       </div>
+
+      <p className="home-footer">
+        Built and owned by Matthew Chiccino &middot;{" "}
+        <a href="https://github.com/matthewchiccino/BTC-Playground" target="_blank" rel="noreferrer">
+          github.com/matthewchiccino/BTC-Playground
+        </a>
+      </p>
     </div>
   );
 }

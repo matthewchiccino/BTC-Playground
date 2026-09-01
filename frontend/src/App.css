@@ -274,6 +274,22 @@
   line-height: 1.5;
 }
 
+.home-footer {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.home-footer a {
+  color: var(--text-dim);
+}
+
+.home-footer a:hover {
+  color: var(--accent);
+}
+
 .scenario-header {
   margin-bottom: 20px;
 }
