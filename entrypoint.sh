@@ -60,8 +60,11 @@ cd /app
 # Bound to localhost only -- caddy is the sole thing that reaches
 # uvicorn; it is never exposed on the container's own external port.
 # BTC_RPC_USER/BTC_RPC_PASSWORD are already exported above, so node.py
-# picks them up without any further plumbing.
-uvicorn main:app --app-dir backend --host 127.0.0.1 --port 8000 &
+# picks them up without any further plumbing. --access-log is already
+# uvicorn's default, but made explicit here -- it's the only per-request
+# record `docker logs` has, and it shouldn't get lost to someone tweaking
+# this line later without realizing that's what turning it off costs.
+uvicorn main:app --app-dir backend --host 127.0.0.1 --port 8000 --access-log &
 UVICORN_PID=$!
 
 caddy run --config /app/Caddyfile --adapter caddyfile &

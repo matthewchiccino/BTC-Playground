@@ -14,6 +14,16 @@ from ratelimit import RateLimiter, rate_limit_dependency
 from scenarios import SCENARIOS, SCENARIOS_BY_ID
 from sources import SOURCES
 
+# Without this, "btcplayground" has no handler of its own, propagates to
+# an unconfigured root logger, and Python's last-resort handler silently
+# eats everything below WARNING -- so logger.exception() calls further
+# down would technically fire but never actually show up in `docker logs`.
+# uvicorn configures its own uvicorn/uvicorn.error/uvicorn.access loggers
+# separately and doesn't touch root, so this doesn't fight with that.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+)
 logger = logging.getLogger("btcplayground")
 
 app = FastAPI(title="My BTC Playground")
