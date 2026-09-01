@@ -116,7 +116,6 @@ export default function AboutNode() {
     <div className="home-page">
       <div className="home-eyebrow">About</div>
       <h2>The Node</h2>
-      <p className="home-lede">A real bitcoind, not a mock.</p>
 
       {error && <div className="error-banner">{error}</div>}
 
@@ -130,19 +129,17 @@ export default function AboutNode() {
         ) : (
           ""
         )}{" "}
-        &mdash; running locally in <strong>regtest</strong> mode: a fully isolated test network
-        with no real money, no real peers, and no miner but this one. Nothing in this app is
-        simulated or hardcoded; every accept or reject string you've seen is that node's own real
-        answer to a real RPC call.
+        &mdash; running locally in <strong>regtest</strong> mode. Nothing in this app is
+        simulated or hardcoded. Every query is that node's real
+        answer to a real RPC call.  
       </p>
 
       <LivePulse />
 
       <h3 className="home-subhead">The frozen chain</h3>
       <p className="home-copy">
-        Bitcoin normally needs a wallet, a mined chain, and time for coins to mature. To let many
-        visitors share one lightweight node safely, this node was mined <strong>once</strong>, by
-        a setup script, and then frozen -- nothing has mined a block since. Every scenario proves
+        Bitcoin normally needs a wallet, a mined chain, and time for coins to mature. To the public 
+        share one node, this node was mined <strong>once</strong>, and then frozen. . Every scenario proves
         this by never broadcasting or mutating anything: it only ever asks the node "would you
         accept this?" through read-only RPC calls (<code>testmempoolaccept</code>, and{" "}
         <code>getblocktemplate</code> in proposal mode), so the tip below never moves no matter
@@ -168,8 +165,8 @@ export default function AboutNode() {
 
       <h3 className="home-subhead">Pre-loaded fixtures</h3>
       <p className="home-copy">
-        Two UTXOs were set up ahead of time and are reused by every scenario that needs to spend
-        something real -- one still spendable, one deliberately already spent (for Double Spend):
+        To keep things simple, two UTXOs were set up ahead of time and are reused by every scenario that needs to spend
+        something real. One still spendable, one deliberately already spent (for Double Spend):
       </p>
 
       {info && (
