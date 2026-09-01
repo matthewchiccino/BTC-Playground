@@ -42,15 +42,12 @@ bitcoind -regtest -conf="$CONF" -datadir="$DATADIR" "${AUTH[@]}" &
 BITCOIND_PID=$!
 
 echo "entrypoint: waiting for bitcoind RPC..."
-ready=0
-for i in $(seq 1 60); do
-    if bitcoin-cli -regtest -conf="$CONF" -datadir="$DATADIR" "${AUTH[@]}" getblockchaininfo >/dev/null 2>&1; then
-        ready=1
-        break
-    fi
-    sleep 1
-done
-if [ "$ready" -ne 1 ]; then
+# -rpcwait blocks bitcoin-cli until the RPC server actually answers --
+# retrying connection-refused and still-warming-up internally -- instead
+# of a hand-rolled sleep-and-poll loop reimplementing the same thing.
+# -rpcwaittimeout keeps the old 60s bound instead of waiting forever.
+if ! bitcoin-cli -regtest -conf="$CONF" -datadir="$DATADIR" "${AUTH[@]}" \
+    -rpcwait -rpcwaittimeout=60 getblockchaininfo >/dev/null; then
     echo "entrypoint: bitcoind did not become ready in time" >&2
     exit 1
 fi
