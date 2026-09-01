@@ -1,4 +1,4 @@
-# fly.toml app configuration file generated for btc-playground on 2026-09-01T21:47:56Z
+# fly.toml app configuration file for btc-playground.
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
@@ -13,11 +13,34 @@ primary_region = 'ord'
   force_https = true
   auto_stop_machines = 'stop'
   auto_start_machines = true
-  min_machines_running = 0
+  # Launch's default (0) scales to zero when idle -- but boot here isn't
+  # instant: FORCE_SETUP re-mines the whole regtest chain from scratch on
+  # every start (see entrypoint.sh), which took ~15-20s even warm-cached
+  # locally. A cold start on a scaled-to-zero machine would race that
+  # against however long Fly's proxy is willing to hold a request open,
+  # which is exactly what "URL doesn't respond" looks like. Keep one
+  # machine always on instead.
+  min_machines_running = 1
   processes = ['app']
 
+  # Checks the actual node (via /api/health), not just "is Caddy's port
+  # open" -- Caddy only starts at the very end of entrypoint.sh's boot
+  # sequence, after bitcoind and setup_chain.py finish, so a bare TCP
+  # check wouldn't confirm the app is actually able to serve a request.
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "90s"
+    method = "GET"
+    path = "/api/health"
+
 [[vm]]
-  memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
-  memory_mb = 256
+  # The launch form generated conflicting memory = '1gb' and
+  # memory_mb = 256 in this same block -- picking one, and going with
+  # 512mb rather than the 256 that was actually live: bitcoind, uvicorn,
+  # and caddy are three separate processes in one machine, and the
+  # chain-remine-on-every-boot burst is a real spike, not just steady-
+  # state serving. 256MB risked an OOM kill mid-boot.
+  memory = '512mb'
