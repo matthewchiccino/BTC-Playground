@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 import buildcache
 from decode import decode_payload
-from mutations import MUTATIONS
+from mutations import FIXTURES, MUTATIONS
 from node import rpc
 from ratelimit import RateLimiter, rate_limit_dependency
 from scenarios import SCENARIOS, SCENARIOS_BY_ID
@@ -94,6 +94,31 @@ def node_status():
         "chain": info["chain"],
         "blocks": info["blocks"],
         "bestblockhash": info["bestblockhash"],
+    }
+
+
+@app.get("/node-info", dependencies=[Depends(limit_status)])
+def node_info():
+    """Static setup details (from fixtures.json, written once by
+    setup_chain.py) plus a couple of live fields -- for the "About: The
+    Node" page, not the lightweight polling strip."""
+    try:
+        start = time.perf_counter()
+        netinfo = rpc("getnetworkinfo", wallet=None)
+        elapsed_ms = round((time.perf_counter() - start) * 1000, 1)
+    except Exception:
+        logger.exception("getnetworkinfo failed")
+        raise HTTPException(status_code=502, detail="node unreachable")
+
+    return {
+        "subversion": netinfo["subversion"],
+        "protocol_version": netinfo["protocolversion"],
+        "elapsed_ms": elapsed_ms,
+        "network": FIXTURES["network"],
+        "frozen_tip_hash": FIXTURES["frozen_tip_hash"],
+        "frozen_tip_height": FIXTURES["frozen_tip_height"],
+        "mining_address": FIXTURES["mining_address"],
+        "utxos": FIXTURES["utxos"],
     }
 
 

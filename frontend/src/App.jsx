@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import "./App.css";
+import AboutApproach from "./AboutApproach";
+import AboutNode from "./AboutNode";
 import DecodedView from "./DecodedView";
 import HexDiff from "./HexDiff";
 import HomePage from "./HomePage";
@@ -72,7 +74,7 @@ function Explanation({ text, reference }) {
 
 export default function App() {
   const [scenarios, setScenarios] = useState([]);
-  const [view, setView] = useState("home"); // "home" | "scenario"
+  const [view, setView] = useState("home"); // "home" | "scenario" | "about-node" | "about-approach"
   const [selectedId, setSelectedId] = useState(null);
   const [stage, setStage] = useState("selected"); // selected -> building -> built -> submitting -> response -> revealed
   const [buildData, setBuildData] = useState(null);
@@ -106,6 +108,10 @@ export default function App() {
 
   function goHome() {
     setView("home");
+  }
+
+  function goAbout(page) {
+    setView(page); // "about-node" | "about-approach"
   }
 
   async function doBuild(overrideVal) {
@@ -184,11 +190,27 @@ export default function App() {
               <span className="kind">{s.kind}</span>
             </button>
           ))}
+
+          <div className="sidebar-label">About</div>
+          <button
+            className={`nav-home ${view === "about-node" ? "active" : ""}`}
+            onClick={() => goAbout("about-node")}
+          >
+            The Node
+          </button>
+          <button
+            className={`nav-home ${view === "about-approach" ? "active" : ""}`}
+            onClick={() => goAbout("about-approach")}
+          >
+            The Source Map
+          </button>
         </div>
         <div className="main">
           {error && <div className="error-banner">{error}</div>}
 
           {view === "home" && <HomePage scenarios={scenarios} onSelectScenario={selectScenario} />}
+          {view === "about-node" && <AboutNode />}
+          {view === "about-approach" && <AboutApproach />}
 
           {view === "scenario" && !selected && !error && (
             <p className="empty-state">

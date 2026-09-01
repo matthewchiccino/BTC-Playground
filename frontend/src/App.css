@@ -698,3 +698,133 @@
   font-size: 13px;
   margin-bottom: 16px;
 }
+
+.mono {
+  font-family: var(--mono);
+}
+
+/* --- About: The Node --- */
+
+.live-pulse {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin: 8px 0 24px;
+  max-width: 720px;
+}
+
+.live-pulse-error {
+  border-color: var(--danger);
+  color: var(--danger);
+  font-size: 13px;
+}
+
+.live-pulse-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.live-pulse-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.live-pulse-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 20px;
+}
+
+.live-pulse-full {
+  grid-column: 1 / -1;
+}
+
+.live-pulse-k {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+}
+
+.live-pulse-v {
+  display: block;
+  font-size: 13px;
+  color: var(--text);
+  word-break: break-all;
+}
+
+.live-pulse-note {
+  font-size: 12.5px;
+  color: var(--text-faint);
+  margin: 14px 0 0;
+  line-height: 1.5;
+}
+
+.node-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0 20px;
+}
+
+.node-fact {
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.node-fact-k {
+  color: var(--text-faint);
+  min-width: 140px;
+  flex-shrink: 0;
+}
+
+.node-fact-v {
+  color: var(--text-dim);
+  word-break: break-all;
+}
+
+.fixture-table {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.fixture-row {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.fixture-name {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.fixture-detail {
+  display: flex;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.fixture-detail span {
+  color: var(--text-faint);
+  min-width: 60px;
+  flex-shrink: 0;
+}
+
+.fixture-detail code {
+  font-family: var(--mono);
+  word-break: break-all;
+}
