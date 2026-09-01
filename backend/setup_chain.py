@@ -79,6 +79,20 @@ def main():
 
     already_spent = already_spent_fixture
 
+    # Fixed destination addresses reused by every mutation's own tx-building
+    # (dust_output, fee_too_low, double_spend, coinbase_maturity). Generated
+    # once here instead of minting a fresh one per /build call: baseline and
+    # payload builds land on the same address, so the hex/readable diff only
+    # highlights what actually changed, not incidental scriptPubKey churn --
+    # and the wallet's keypool stops growing on every request.
+    scratch_addresses = {
+        "dust_a": rpc("getnewaddress", ["scratch_dust_a"]),
+        "dust_change": rpc("getnewaddress", ["scratch_dust_change"]),
+        "fee_dest": rpc("getnewaddress", ["scratch_fee_dest"]),
+        "double_spend_dest": rpc("getnewaddress", ["scratch_double_spend_dest"]),
+        "coinbase_spend_dest": rpc("getnewaddress", ["scratch_coinbase_spend_dest"]),
+    }
+
     tip_hash = rpc("getbestblockhash")
     tip_height = rpc("getblockcount")
 
@@ -91,6 +105,7 @@ def main():
             "spendable_a": spendable_a,
             "already_spent": already_spent,
         },
+        "scratch_addresses": scratch_addresses,
     }
 
     with open(FIXTURES_PATH, "w") as f:

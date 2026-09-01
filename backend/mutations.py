@@ -96,7 +96,10 @@ def bad_merkle_root(merkle_root_hex: str | None = None) -> dict:
 def _build_spend_block(calls: list, utxo_key: str):
     """A block containing one tx that spends the named fixture UTXO."""
     fixture = FIXTURES["utxos"][utxo_key]
-    dest = _traced_rpc(calls, "getnewaddress", [f"spend_{utxo_key}"])
+    # Fixed, not fresh: double_spend's real point is which INPUT gets spent,
+    # not the destination. A shared address keeps that the only thing that
+    # differs between the "attack" and "control" builds.
+    dest = FIXTURES["scratch_addresses"]["double_spend_dest"]
     fee = 0.0001
     send_amount = round(fixture["amount"] - fee, 8)
 
@@ -173,8 +176,10 @@ def dust_output(value_sats: int | None = None) -> dict:
     chosen_sats = 1 if value_sats is None else value_sats
 
     def _build(sats: int) -> str:
-        addr = _traced_rpc(calls, "getnewaddress", ["dust_output"])
-        change_addr = _traced_rpc(calls, "getnewaddress", ["dust_change"])
+        # Fixed addresses -- baseline and payload share them, so the diff
+        # highlights only the output values, not two fresh scriptPubKeys.
+        addr = FIXTURES["scratch_addresses"]["dust_a"]
+        change_addr = FIXTURES["scratch_addresses"]["dust_change"]
 
         spend_sats = round(spendable["amount"] * 100_000_000)
         change_sats = spend_sats - sats - fee_sats
@@ -227,7 +232,7 @@ def fee_too_low(fee_sats: int | None = None) -> dict:
     chosen_fee = 1 if fee_sats is None else fee_sats
 
     def _build(fee: int) -> str:
-        addr = _traced_rpc(calls, "getnewaddress", ["fee_test"])
+        addr = FIXTURES["scratch_addresses"]["fee_dest"]  # fixed, see dust_output
         spend_sats = round(spendable["amount"] * 100_000_000)
         send_sats = spend_sats - fee
 
@@ -279,7 +284,7 @@ def _spend_coinbase_block(calls: list, confirmations: int):
     coinbase = block["tx"][0]
     vout0 = coinbase["vout"][0]
 
-    dest = _traced_rpc(calls, "getnewaddress", [f"spend_cb_{height}"])
+    dest = FIXTURES["scratch_addresses"]["coinbase_spend_dest"]  # fixed, see dust_output
     fee_btc = 0.0001
     send_amount = round(vout0["value"] - fee_btc, 8)
     raw = _traced_rpc(
