@@ -355,6 +355,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  max-width: 720px;
 }
 
 .pane {
@@ -602,6 +603,16 @@
   font-family: var(--mono);
   font-size: 13px;
   padding: 7px 10px;
+}
+
+.editable-input-narrow {
+  flex: none;
+  width: 140px;
+}
+
+.editable-input-medium {
+  flex: none;
+  width: 320px;
 }
 
 .editable-input:focus {

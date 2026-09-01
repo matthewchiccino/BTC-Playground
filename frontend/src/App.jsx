@@ -329,7 +329,7 @@ export default function App() {
                             <div className="editable-row">
                               {selected.editable.type === "choice" ? (
                                 <select
-                                  className="editable-input"
+                                  className="editable-input editable-input-medium"
                                   value={overrideValue}
                                   onChange={(e) => setOverrideValue(e.target.value)}
                                 >
@@ -342,7 +342,7 @@ export default function App() {
                               ) : (
                                 <input
                                   type={selected.editable.type === "hex" ? "text" : "number"}
-                                  className="editable-input"
+                                  className={`editable-input ${selected.editable.type === "int" ? "editable-input-narrow" : ""}`}
                                   min={selected.editable.min}
                                   max={selected.editable.max}
                                   step={selected.editable.step}
