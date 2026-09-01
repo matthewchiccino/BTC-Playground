@@ -1,0 +1,28 @@
+# backend/fixtures.json is the one that actually matters: if a stale copy
+# from the build host got baked into the image, it would reference UTXOs
+# that don't exist on the container's own freshly-mined chain. setup_chain.py
+# guards against this too (see --force/FORCE_SETUP), but it should never get
+# the chance -- this file just shouldn't be in the image at all.
+backend/fixtures.json
+backend/.sources_cache/
+backend/sources_candidates.json
+
+# Local dev state that has no business in an image.
+.git/
+.bitcoin-regtest/
+node_debug.log
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+
+# Frontend build output gets produced fresh inside the image, and
+# node_modules is reinstalled there too -- don't ship the host's copies.
+frontend/node_modules/
+frontend/dist/
+
+# Editor/OS noise.
+*.swp
+.idea/
+.vscode/

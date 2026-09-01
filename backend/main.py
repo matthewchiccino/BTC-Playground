@@ -14,6 +14,16 @@ from ratelimit import RateLimiter, rate_limit_dependency
 from scenarios import SCENARIOS, SCENARIOS_BY_ID
 from sources import SOURCES
 
+# Without this, "btcplayground" has no handler of its own, propagates to
+# an unconfigured root logger, and Python's last-resort handler silently
+# eats everything below WARNING -- so logger.exception() calls further
+# down would technically fire but never actually show up in `docker logs`.
+# uvicorn configures its own uvicorn/uvicorn.error/uvicorn.access loggers
+# separately and doesn't touch root, so this doesn't fight with that.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+)
 logger = logging.getLogger("btcplayground")
 
 app = FastAPI(title="My BTC Playground")
@@ -76,6 +86,22 @@ class ScenarioRequest(BaseModel):
 class SubmitRequest(BaseModel):
     model_config = {"extra": "forbid"}
     build_id: str = Field(pattern=BUILD_ID_PATTERN)
+
+
+@app.get("/health")
+def health():
+    """Liveness probe, not user-facing: attempts one cheap RPC call and
+    returns 200/503. No rate limit -- a container orchestrator hits this
+    every ~30s for the life of the process, and rate-limiting it defeats
+    the point of a restart-on-failure policy. Deliberately separate from
+    /node-status, which is rate-limited, richer, and meant for the UI.
+    """
+    try:
+        rpc("getblockcount", wallet=None)
+    except Exception:
+        logger.exception("health check RPC failed")
+        raise HTTPException(status_code=503, detail="node unreachable")
+    return {"status": "ok"}
 
 
 @app.get("/scenarios", dependencies=[Depends(limit_status)])

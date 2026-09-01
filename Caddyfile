@@ -1,0 +1,23 @@
+# Serves the built frontend and the backend from one origin, so CORS
+# doesn't need to exist in production -- main.py's hardcoded localhost
+# origins stay for `npm run dev`, and become irrelevant here since every
+# request in prod is same-origin.
+#
+# :{$PORT:80} lets a platform inject its own port (Fly.io, Render, etc. via
+# the PORT env var) while defaulting to 80 for a plain container run. The
+# leading colon matters: a bare "8080" with no colon is parsed by Caddy as
+# a hostname, not a port, and it'll go try to ACME a TLS cert for it.
+:{$PORT:80} {
+	# handle_path strips the /api prefix before proxying, so the backend's
+	# own routes stay exactly /build, /submit, /scenarios, etc. -- no
+	# knowledge of being mounted under /api leaks into main.py.
+	handle_path /api/* {
+		reverse_proxy 127.0.0.1:8000
+	}
+
+	handle {
+		root * /srv/frontend
+		try_files {path} /index.html
+		file_server
+	}
+}

@@ -1,0 +1,7 @@
+# Runtime deps only -- pytest and friends stay out of the deployed image.
+# Pinned to what's actually running in dev (see .venv), verified via
+# `pip freeze` against a working install.
+fastapi==0.141.1
+uvicorn==0.52.4
+requests==2.34.2
+pydantic==2.13.4
