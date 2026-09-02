@@ -14,32 +14,37 @@ export default function AboutApproach() {
 
       <h3 className="home-subhead">Why</h3>
       <p className="home-copy">
-        Bitcoin Core's source lives at{" "}
+        The source code for Bitcoin, called Bitcoin Core, lives at{" "}
         <a href="https://github.com/bitcoin/bitcoin" target="_blank" rel="noreferrer">
           bitcoin/bitcoin
         </a>{" "}
-        -- hundreds of thousands of lines of C++. The rejection strings this app shows come from a
-        handful of files inside it. Pointing at the right line matters, and it's easy to get
-        wrong: the same string can come from two different checks for two different reasons, so
-        citing one doesn't tell you which one actually fired.
+        . It contains hundreds of thousands of lines of C++ code. We are running an instance
+        of this program, a bitcoin core node, inside this sandbox. The responses you see come directly
+        from the nodes actual code. It will point the exact line of code that produced the response. 
+        
+        It's not an intuitive process, and its easy to get wrong. The same string can come from two 
+        different checks for two different reasons, so the source map built for this app is a 
+        comprehensive list of all the places a given string can come from, and an explination of 
+        where percicely that response came from.
+
       </p>
 
       <h3 className="home-subhead">How</h3>
       <p className="home-copy">
         Every citation started the same way: build the attack, run it against the live node, read
-        the real verdict, then go find that exact check in the source. Not a guess from memory --
+        the real verdict, then go find that exact check in the source. Not a guess from memory,
         the node's real answer, then the real code.
       </p>
       <p className="home-copy">
-        Every permalink points at one specific commit --{" "}
+        Every permalink points at one specific commit: {" "}
         <a href={`https://github.com/bitcoin/bitcoin/tree/${CORE_COMMIT}`} target="_blank" rel="noreferrer">
           {CORE_COMMIT.slice(0, 10)}
         </a>{" "}
-        (tag v31.1) -- never a branch. Line numbers on a moving branch drift within weeks; pinned
-        to a commit, a permalink stays correct.
+        (tag v31.1). Line numbers on a moving branch drift within weeks. If we instead pin
+        to a commit, our reference stays permanently correct. 
       </p>
       <p className="home-copy">
-        To catch the "same string, two checks" problem, <code>gen_sources.py</code> scans Core's
+        To catch the "same string, two checks" problem, our script<code>gen_sources.py</code> scans Core's
         actual source tree and finds every place a given rejection string could come from, not
         just the first one someone happened to find. <code>test_sources.py</code> then checks
         every citation against the real file, so a bad one gets caught right away instead of
@@ -54,7 +59,7 @@ export default function AboutApproach() {
 REASON_ASSIGN_RE = re.compile(r'\\breason\\s*=\\s*"((?:[^"\\\\]|\\\\.)*)"\\s*;')`}</pre>
       <p className="home-copy diff-hint">
         The actual regex from <code>gen_sources.py</code>. Two patterns because Core rejects
-        things two different ways -- a <code>state.Invalid(...)</code> call, and a plain{" "}
+        things two different ways: a <code>state.Invalid(...)</code> call, and a plain{" "}
         <code>reason = "...";</code> assignment used only in <code>policy.cpp</code>.
       </p>
 
