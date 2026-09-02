@@ -247,7 +247,7 @@ export default function App() {
                   <div className="pane-header">
                     <span>1. The Payload</span>
                     {stage === "selected" && (
-                      <button className="action-btn" onClick={() => doBuild()}>
+                      <button className="action-btn action-btn-primary action-btn-pulse" onClick={() => doBuild()}>
                         Build Payload
                       </button>
                     )}
