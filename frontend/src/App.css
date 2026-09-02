@@ -33,6 +33,16 @@
   margin-right: 6px;
 }
 
+.github-link {
+  display: flex;
+  align-items: center;
+  color: var(--text-dim);
+}
+
+.github-link:hover {
+  color: var(--text);
+}
+
 .topbar .subtitle {
   color: var(--text-dim);
   font-size: 13px;
