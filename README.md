@@ -1,4 +1,4 @@
-# My BTC Playground
+# BTC Playground
 
 Break Bitcoin's consensus rules on purpose. A sandbox that builds deliberately
 invalid Bitcoin blocks/transactions and submits them to a real local

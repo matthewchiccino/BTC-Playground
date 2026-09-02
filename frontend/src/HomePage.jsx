@@ -2,13 +2,13 @@ export default function HomePage({ scenarios, onSelectScenario }) {
   return (
     <div className="home-page">
       <div className="home-eyebrow">Home</div>
-      <h2>My BTC Playground</h2>
+      <h2>BTC Playground</h2>
       <p className="home-lede">Break Bitcoin's consensus rules on purpose.</p>
 
       <p className="home-copy">
         Bitcoin Core constatnly rejects invalid blocks and transactions. By seeing how and why,
-        we can understand the bitcoin protocal much better from a operational and implementational level.
-        This is an sandbox environment that builds intentionally invalid attacks and submits them to a 
+        we can understand the bitcoin protocal much better from an operational and implementational level.
+        This is a sandbox environment that builds intentionally invalid attacks and submits them to a 
         real Bitcoin node, so you can see exactly which line of code catches it.
       </p>
       <p className="home-copy">

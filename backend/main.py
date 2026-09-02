@@ -26,7 +26,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("btcplayground")
 
-app = FastAPI(title="My BTC Playground")
+app = FastAPI(title="BTC Playground")
 
 app.add_middleware(
     CORSMiddleware,
