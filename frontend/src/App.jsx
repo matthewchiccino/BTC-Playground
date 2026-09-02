@@ -168,6 +168,7 @@ export default function App() {
     <div className="app">
       <div className="topbar">
         <h1 className="app-title-link" onClick={goHome}>
+          <img src="/Bitcoin.svg.webp" alt="" className="app-logo" />
           BTC Playground
         </h1>
         <span className="subtitle">break Bitcoin's consensus rules on purpose</span>
