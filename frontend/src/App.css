@@ -674,23 +674,6 @@
   filter: brightness(1.08);
 }
 
-.action-btn-pulse {
-  animation: action-btn-glow 2s ease-in-out infinite;
-}
-
-.action-btn-pulse:hover {
-  animation: none;
-}
-
-@keyframes action-btn-glow {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(247, 147, 26, 0.45);
-  }
-  50% {
-    box-shadow: 0 0 0 6px rgba(247, 147, 26, 0);
-  }
-}
-
 .reveal-btn {
   margin-top: 14px;
 }
