@@ -398,12 +398,33 @@
   padding: 16px;
 }
 
+.result-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
 .pane.verdict {
   border-color: var(--accent-dim);
 }
 
 .pane.verdict .pane-body {
   padding: 24px 16px;
+}
+
+.result-row .pane {
+  display: flex;
+  flex-direction: column;
+}
+
+.result-row .pane-body {
+  flex: 1;
+}
+
+.result-row .verdict-string {
+  font-size: 22px;
+  word-break: normal;
+  overflow-wrap: anywhere;
 }
 
 .verdict-string {

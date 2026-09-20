@@ -421,31 +421,34 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="pane">
-                      <div className="pane-header">
-                        <span>The Raw Response</span>
-                        <span className="elapsed-badge">{submitData.elapsed_ms}ms round trip</span>
+                    <div className="result-row">
+                      <div className="pane">
+                        <div className="pane-header">
+                          <span>The Raw Response</span>
+                          <span className="elapsed-badge">{submitData.elapsed_ms}ms round trip</span>
+                        </div>
+                        <div className="pane-body">
+                          <pre className="json-block">{JSON.stringify(submitData.rpc_response, null, 2)}</pre>
+                        </div>
                       </div>
-                      <div className="pane-body">
-                        <pre className="json-block">{JSON.stringify(submitData.rpc_response, null, 2)}</pre>
-                      </div>
+                      {stage === "response" && (
+                        <div className="pane verdict">
+                          <div className="pane-header">3. The Verdict</div>
+                          <div className="pane-body">
+                            <div className={`verdict-string ${submitData.accepted ? "accepted" : "rejected"}`}>
+                              {submitData.accepted ? "accepted" : submitData.verdict}
+                            </div>
+                            <RuleTypeBadge ruleType={submitData.rule_type} />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </>
                 )}
 
-                {/* Step 3: Verdict + Source, shown together with the response */}
+                {/* Source for the verdict (the verdict itself sits beside the response above) */}
                 {stage === "response" && (
                   <>
-                    <div className="pane verdict">
-                      <div className="pane-header">3. The Verdict</div>
-                      <div className="pane-body">
-                        <div className={`verdict-string ${submitData.accepted ? "accepted" : "rejected"}`}>
-                          {submitData.accepted ? "accepted" : submitData.verdict}
-                        </div>
-                        <RuleTypeBadge ruleType={submitData.rule_type} />
-                      </div>
-                    </div>
-
                     <div className="pane">
                       <div className="pane-header">The Source</div>
                       <div className="pane-body">
