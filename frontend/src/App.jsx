@@ -326,6 +326,14 @@ export default function App() {
                                 flip right at the line.
                               </p>
                             )}
+                            {selected.editable.type === "int" && selected.id === "locktime_nonfinal" && (
+                              <p className="step-hint">
+                                This block would be block{" "}
+                                <strong>{buildData.hint_value}</strong>. A locktime is only allowed
+                                if it is strictly below the block's height. Pick a locktime and
+                                rebuild to watch the verdict flip right at the line.
+                              </p>
+                            )}
                             {selected.editable.type === "hex" && (
                               <p className="step-hint">
                                 Every node recomputes this from scratch. Only one exact value is

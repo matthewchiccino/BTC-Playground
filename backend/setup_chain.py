@@ -117,6 +117,7 @@ def main():
         "fee_dest": rpc("getnewaddress", ["scratch_fee_dest"]),
         "double_spend_dest": rpc("getnewaddress", ["scratch_double_spend_dest"]),
         "coinbase_spend_dest": rpc("getnewaddress", ["scratch_coinbase_spend_dest"]),
+        "locktime_dest": rpc("getnewaddress", ["scratch_locktime_dest"]),
     }
 
     tip_hash = rpc("getbestblockhash")

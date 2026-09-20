@@ -338,6 +338,73 @@ def coinbase_maturity(confirmations: int | None = None) -> dict:
     }
 
 
+def _build_locktime_block(calls: list, locktime: int):
+    """A block containing one tx that spends spendable_a with nLockTime set.
+
+    The input's sequence is pinned to 0xFFFFFFFE: a tx whose inputs are all
+    0xFFFFFFFF is "final" and its locktime is ignored, so the locktime only
+    means anything once at least one input opts in.
+    """
+    fixture = FIXTURES["utxos"]["spendable_a"]
+    dest = FIXTURES["scratch_addresses"]["locktime_dest"]  # fixed, see dust_output
+    fee = 0.0001
+    send_amount = round(fixture["amount"] - fee, 8)
+
+    raw = _traced_rpc(
+        calls,
+        "createrawtransaction",
+        [
+            [{"txid": fixture["txid"], "vout": fixture["vout"], "sequence": 0xFFFFFFFE}],
+            {dest: send_amount},
+            locktime,
+        ],
+    )
+    prevtx = {
+        "txid": fixture["txid"],
+        "vout": fixture["vout"],
+        "scriptPubKey": fixture["scriptPubKey"],
+        "amount": fixture["amount"],
+    }
+    signed = _traced_rpc(calls, "signrawtransactionwithwallet", [raw, [prevtx]])
+    if not signed["complete"]:
+        raise RuntimeError(f"locktime_nonfinal tx failed to sign (locktime={locktime}): {signed}")
+
+    tx = CTransaction()
+    tx.deserialize(io.BytesIO(bytes.fromhex(signed["hex"])))
+
+    tmpl = _traced_rpc(calls, "getblocktemplate", [{"rules": ["segwit"]}])
+    block = create_block(tmpl=tmpl, txlist=[tx])
+    add_witness_commitment(block)
+    return block, tmpl["height"]
+
+
+def locktime_nonfinal(locktime: int | None = None) -> dict:
+    """Put a tx with a caller-chosen nLockTime into the next block.
+
+    ContextualCheckBlock rejects any tx that fails IsFinalTx(tx, height, ..):
+    a height-style locktime (< 500,000,000) is final only if it is strictly
+    less than the height of the block containing it. The block being
+    proposed sits one above the frozen tip, so that height is the exact
+    boundary: locktime <= tip is accepted, locktime >= tip + 1 is not.
+    Defaults to a locktime one block too far in the future; the baseline
+    uses 0.
+    """
+    calls = []
+    block_height = FIXTURES["frozen_tip_height"] + 1
+    chosen = block_height if locktime is None else locktime
+
+    baseline_block, _ = _build_locktime_block(calls, 0)
+    attack_block = baseline_block if chosen == 0 else _build_locktime_block(calls, chosen)[0]
+
+    return {
+        "baseline_hex": baseline_block.serialize().hex(),
+        "payload_hex": attack_block.serialize().hex(),
+        "build_calls": calls,
+        "editable_value": chosen,
+        "hint_value": block_height,
+    }
+
+
 MUTATIONS = {
     "coinbase_oversubsidy": coinbase_oversubsidy,
     "bad_merkle_root": bad_merkle_root,
@@ -345,4 +412,5 @@ MUTATIONS = {
     "dust_output": dust_output,
     "fee_too_low": fee_too_low,
     "coinbase_maturity": coinbase_maturity,
+    "locktime_nonfinal": locktime_nonfinal,
 }

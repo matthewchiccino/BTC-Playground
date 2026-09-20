@@ -191,6 +191,36 @@ SCENARIOS = [
             "step": 1,
         },
     },
+    {
+        "id": "locktime_nonfinal",
+        "title": "Locktime",
+        "kind": "block",
+        "fixture_key": "spendable_a",
+        "mutation": "locktime_nonfinal",
+        "expected_reject_reason": "bad-txns-nonfinal",
+        "rule_type": "consensus",
+        "explanation": (
+            "This is the rule that lets you sign a transaction now that "
+            "cannot be mined until later. A transaction can carry a "
+            "locktime, which here is a block height. The transaction is "
+            "not allowed into any block until the chain has grown past "
+            "that height. A block that includes it too early is rejected "
+            "outright, even though the signature and the coins are "
+            "perfectly fine. The block in this scenario would be the "
+            "next block on the chain, and the transaction's locktime is "
+            "set to that very height, which is one block too early. "
+            "Adjust the locktime and see how the node responds."
+        ),
+        "reference": None,
+        "editable": {
+            "field": "locktime",
+            "label": "Locktime (block height)",
+            "type": "int",
+            "min": 0,
+            "max": 100_000,
+            "step": 1,
+        },
+    },
 ]
 
 SCENARIOS_BY_ID = {s["id"]: s for s in SCENARIOS}

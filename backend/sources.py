@@ -127,4 +127,30 @@ SOURCES = {
         ),
         "rule_type": "consensus",
     },
+    "bad-txns-nonfinal": {
+        "file": "src/validation.cpp",
+        "function": "ContextualCheckBlock",
+        "lines": [4193, 4195],
+        "permalink": _permalink("src/validation.cpp", 4193, 4195),
+        "snippet": (
+            "for (const auto& tx : block.vtx) {\n"
+            "    if (!IsFinalTx(*tx, nHeight, nLockTimeCutoff)) {\n"
+            '        return state.Invalid(BlockValidationResult::BLOCK_CONSENSUS, "bad-txns-nonfinal", "non-final transaction");'
+        ),
+        "rule_type": "consensus",
+        "also_produced_by": [
+            {
+                "file": "src/validation.cpp",
+                "function": "Chainstate::ConnectBlock",
+                "lines": [2560, 2562],
+                "permalink": _permalink("src/validation.cpp", 2560, 2562),
+                "note": (
+                    "Same string, different rule: this is the BIP68 relative "
+                    "locktime check on input sequence numbers. This scenario "
+                    "uses an absolute locktime, so the IsFinalTx check above "
+                    "(the primary entry) is what fires."
+                ),
+            }
+        ],
+    },
 }
