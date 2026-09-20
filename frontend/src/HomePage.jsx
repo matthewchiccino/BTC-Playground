@@ -23,14 +23,12 @@ export default function HomePage({ scenarios, onSelectScenario }) {
           chain tip.
         </li>
         <li>
-          <strong>Submit</strong>: send that exact payload to the node for real validation.
+          <strong>Submit</strong>: send that exact payload to the node for real validation. The
+          raw JSON-RPC exchange and how long it took appear right away.
         </li>
         <li>
-          <strong>Response</strong>: see the raw JSON-RPC exchange and how long it actually took.
-        </li>
-        <li>
-          <strong>Verdict</strong>: the node's verbatim rejection string, plus the C++ source
-          line that produced it.
+          <strong>Verdict</strong>: shown alongside the response, the node's verbatim rejection
+          string, plus the C++ source line that produced it.
         </li>
       </ol>
       <p className="home-copy">

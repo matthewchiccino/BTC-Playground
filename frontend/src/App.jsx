@@ -21,12 +21,11 @@ async function throwForStatus(res) {
   throw new Error(detail);
 }
 
-const STEPS = ["build", "submit", "response", "verdict"];
+const STEPS = ["build", "submit", "verdict"];
 const STEP_LABEL = {
   build: "1. Build",
   submit: "2. Submit",
-  response: "3. Response",
-  verdict: "4. Verdict",
+  verdict: "3. Verdict",
 };
 
 function StepTracker({ stage }) {
@@ -36,7 +35,6 @@ function StepTracker({ stage }) {
     built: 0,
     submitting: 1,
     response: 2,
-    revealed: 3,
   }[stage];
 
   return (
@@ -76,7 +74,7 @@ export default function App() {
   const [scenarios, setScenarios] = useState([]);
   const [view, setView] = useState("home"); // "home" | "scenario" | "about-node" | "about-approach"
   const [selectedId, setSelectedId] = useState(null);
-  const [stage, setStage] = useState("selected"); // selected -> building -> built -> submitting -> response -> revealed
+  const [stage, setStage] = useState("selected"); // selected -> building -> built -> submitting -> response
   const [buildData, setBuildData] = useState(null);
   const [submitData, setSubmitData] = useState(null);
   const [error, setError] = useState(null);
@@ -409,7 +407,7 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Step 3: Request + raw Response */}
+                {/* Step 2 result: Request + raw Response */}
                 {submitData && (
                   <>
                     <div className="pane">
@@ -425,26 +423,21 @@ export default function App() {
 
                     <div className="pane">
                       <div className="pane-header">
-                        <span>3. The Raw Response</span>
+                        <span>The Raw Response</span>
                         <span className="elapsed-badge">{submitData.elapsed_ms}ms round trip</span>
                       </div>
                       <div className="pane-body">
                         <pre className="json-block">{JSON.stringify(submitData.rpc_response, null, 2)}</pre>
-                        {stage === "response" && (
-                          <button className="action-btn action-btn-primary reveal-btn" onClick={() => setStage("revealed")}>
-                            Reveal Verdict &amp; Source &rarr;
-                          </button>
-                        )}
                       </div>
                     </div>
                   </>
                 )}
 
-                {/* Step 4: Verdict + Source */}
-                {stage === "revealed" && (
+                {/* Step 3: Verdict + Source, shown together with the response */}
+                {stage === "response" && (
                   <>
                     <div className="pane verdict">
-                      <div className="pane-header">4. The Verdict</div>
+                      <div className="pane-header">3. The Verdict</div>
                       <div className="pane-body">
                         <div className={`verdict-string ${submitData.accepted ? "accepted" : "rejected"}`}>
                           {submitData.accepted ? "accepted" : submitData.verdict}
