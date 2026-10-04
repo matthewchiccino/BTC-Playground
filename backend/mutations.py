@@ -7,10 +7,10 @@
                      payload, so the UI can show what actually happened
 
 Transactions: build a valid baseline via the node's own wallet, then mutate
-the deserialized bytes in Python (see plam.md section 4.1).
+the deserialized bytes in Python (see docs/history/build-plan.md section 4.1).
 
 Blocks: vendor Core's own test_framework for coinbase/merkle construction
-rather than hand-rolling serialization (see plam.md section 4.2).
+rather than hand-rolling serialization (see docs/history/build-plan.md section 4.2).
 """
 import io
 import json
@@ -25,7 +25,8 @@ from test_framework.messages import CTransaction, ser_uint256  # noqa: E402
 
 from node import rpc  # noqa: E402
 
-FIXTURES_PATH = os.path.join(os.path.dirname(__file__), "fixtures.json")
+# Overridable so tests (and CI) can point at a throwaway file without touching the real one.
+FIXTURES_PATH = os.environ.get("BTC_FIXTURES_PATH") or os.path.join(os.path.dirname(__file__), "fixtures.json")
 
 with open(FIXTURES_PATH) as f:
     FIXTURES = json.load(f)
@@ -58,8 +59,8 @@ def coinbase_oversubsidy(value_sats: int | None = None) -> dict:
         "baseline_hex": baseline_block.serialize().hex(),
         "payload_hex": attack_block.serialize().hex(),
         "build_calls": calls,
-        "subsidy_sats": subsidy_sats,
         "editable_value": attack_coinbase.vout[0].nValue,
+        "hint_value": subsidy_sats,
     }
 
 

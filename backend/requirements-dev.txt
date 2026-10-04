@@ -1,0 +1,6 @@
+# Test/dev-only dependencies. Deliberately separate from requirements.txt so
+# the deployed image (Dockerfile installs requirements.txt only) stays lean.
+# Pinned to what the suite was last run green against.
+-r requirements.txt
+pytest==9.1.1
+httpx2==2.13.1   # FastAPI's TestClient backend (starlette deprecates plain httpx here)

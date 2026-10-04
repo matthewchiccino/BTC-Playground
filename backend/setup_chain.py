@@ -12,7 +12,8 @@ by accident; see .dockerignore). Pass --force, or set FORCE_SETUP=1, to
 skip the idempotency check and always re-mine.
 
 The chain is never mined again after this runs within a given boot -- see
-plam.md section 2.2 for why.
+docs/history/build-plan.md section 2.2 (and
+docs/decisions/0002-frozen-chain-stateless-boot.md) for why.
 """
 import json
 import os
@@ -20,7 +21,8 @@ import sys
 
 from node import rpc
 
-FIXTURES_PATH = os.path.join(os.path.dirname(__file__), "fixtures.json")
+# Overridable so tests (and CI) can point at a throwaway file without touching the real one.
+FIXTURES_PATH = os.environ.get("BTC_FIXTURES_PATH") or os.path.join(os.path.dirname(__file__), "fixtures.json")
 
 
 def main():

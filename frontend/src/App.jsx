@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import "./App.css";
 import AboutApproach from "./AboutApproach";
 import AboutNode from "./AboutNode";
@@ -19,6 +19,24 @@ async function throwForStatus(res) {
     // body wasn't JSON -- fall back to the status-based message above
   }
   throw new Error(detail);
+}
+
+// The hint text lives in the scenario catalog (backend/scenarios.py), so a new
+// scenario never needs a UI change. "{hint_value}" is the one placeholder.
+function EditableHint({ editable, hintValue }) {
+  if (!editable.hint) return null;
+  const value = typeof hintValue === "number" ? hintValue.toLocaleString() : hintValue;
+  const Value = editable.type === "hex" ? "code" : "strong";
+  return (
+    <p className="step-hint">
+      {editable.hint.split("{hint_value}").map((part, i) => (
+        <Fragment key={i}>
+          {i > 0 && <Value>{value}</Value>}
+          {part}
+        </Fragment>
+      ))}
+    </p>
+  );
 }
 
 const STEPS = ["build", "submit", "verdict"];
@@ -293,58 +311,7 @@ export default function App() {
                         )}
                         {selected.editable && (
                           <div className="editable-inline">
-                            {selected.editable.type === "int" && selected.id === "coinbase_oversubsidy" && (
-                              <p className="step-hint">
-                                Subsidy at this height is{" "}
-                                <strong>{buildData.subsidy_sats?.toLocaleString()} sats</strong>. Pick a new
-                                payout and rebuild -- watch the verdict flip.
-                              </p>
-                            )}
-                            {selected.editable.type === "int" && selected.id === "dust_output" && (
-                              <p className="step-hint">
-                                The dust threshold is{" "}
-                                <strong>{buildData.hint_value?.toLocaleString()} sats</strong>. This tx
-                                pays an ordinary fee, so it can't carry a dust output at all. Pick a
-                                value and rebuild to watch the verdict flip right at the line.
-                              </p>
-                            )}
-                            {selected.editable.type === "int" && selected.id === "fee_too_low" && (
-                              <p className="step-hint">
-                                This transaction needs at least{" "}
-                                <strong>{buildData.hint_value?.toLocaleString()} sats</strong> to clear
-                                this node's relay floor, given its size. Pick a fee and rebuild to
-                                watch the verdict flip right at the line.
-                              </p>
-                            )}
-                            {selected.editable.type === "int" && selected.id === "coinbase_maturity" && (
-                              <p className="step-hint">
-                                A coinbase reward needs{" "}
-                                <strong>{buildData.hint_value} confirmations</strong> before it's
-                                spendable. Pick a confirmation count and rebuild to watch the verdict
-                                flip right at the line.
-                              </p>
-                            )}
-                            {selected.editable.type === "int" && selected.id === "locktime_nonfinal" && (
-                              <p className="step-hint">
-                                This block would be block{" "}
-                                <strong>{buildData.hint_value}</strong>. A locktime is only allowed
-                                if it is strictly below the block's height. Pick a locktime and
-                                rebuild to watch the verdict flip right at the line.
-                              </p>
-                            )}
-                            {selected.editable.type === "hex" && (
-                              <p className="step-hint">
-                                Every node recomputes this from scratch. Only one exact value is
-                                accepted -- everything else, even a single flipped character, is
-                                rejected. The correct value is <code>{buildData.hint_value}</code>.
-                              </p>
-                            )}
-                            {selected.editable.type === "choice" && (
-                              <p className="step-hint">
-                                One of these is genuinely still spendable, one was already spent in this
-                                chain. Pick either and rebuild to compare.
-                              </p>
-                            )}
+                            <EditableHint editable={selected.editable} hintValue={buildData.hint_value} />
                             <div className="editable-row">
                               {selected.editable.type === "choice" ? (
                                 <select

@@ -1,5 +1,11 @@
 """The attack catalog. Add a scenario by adding one entry here and one
-mutation function in mutations.py -- nothing else should need to change.
+mutation function in mutations.py -- nothing else should need to change
+(plus a SOURCES entry in sources.py if the rejection string is new).
+
+Everything the UI shows for a scenario comes from this data: the
+explanation, the editable input, and its `hint`. A hint may contain the
+single placeholder {hint_value}, which the UI fills from the mutation's
+`hint_value`. tests/unit/test_catalog.py enforces this contract.
 """
 
 SCENARIOS = [
@@ -27,6 +33,7 @@ SCENARIOS = [
         "editable": {
             "field": "value_sats",
             "label": "Coinbase payout (satoshis)",
+            "hint": "Subsidy at this height is {hint_value} sats. Pick a new payout and rebuild -- watch the verdict flip.",
             "type": "int",
             "min": 0,
             "max": 10_000_000_000,
@@ -57,6 +64,7 @@ SCENARIOS = [
         "editable": {
             "field": "utxo_key",
             "label": "UTXO to spend",
+            "hint": "One of these is genuinely still spendable, one was already spent in this chain. Pick either and rebuild to compare.",
             "type": "choice",
             "options": [
                 {"value": "already_spent", "label": "Already-spent UTXO (the attack)"},
@@ -90,6 +98,7 @@ SCENARIOS = [
         "editable": {
             "field": "merkle_root_hex",
             "label": "Merkle root (hex)",
+            "hint": "Every node recomputes this from scratch. Only one exact value is accepted -- everything else, even a single flipped character, is rejected. The correct value is {hint_value}.",
             "type": "hex",
             "length": 64,
         },
@@ -125,6 +134,7 @@ SCENARIOS = [
         "editable": {
             "field": "value_sats",
             "label": "Output value (satoshis)",
+            "hint": "The dust threshold is {hint_value} sats. This tx pays an ordinary fee, so it can't carry a dust output at all. Pick a value and rebuild to watch the verdict flip right at the line.",
             "type": "int",
             "min": 1,
             "max": 2000,
@@ -156,6 +166,7 @@ SCENARIOS = [
         "editable": {
             "field": "fee_sats",
             "label": "Fee (satoshis)",
+            "hint": "This transaction needs at least {hint_value} sats to clear this node's relay floor, given its size. Pick a fee and rebuild to watch the verdict flip right at the line.",
             "type": "int",
             "min": 1,
             "max": 1000,
@@ -185,6 +196,7 @@ SCENARIOS = [
         "editable": {
             "field": "confirmations",
             "label": "Confirmations",
+            "hint": "A coinbase reward needs {hint_value} confirmations before it's spendable. Pick a confirmation count and rebuild to watch the verdict flip right at the line.",
             "type": "int",
             "min": 1,
             "max": 123,
@@ -215,6 +227,7 @@ SCENARIOS = [
         "editable": {
             "field": "locktime",
             "label": "Locktime (block height)",
+            "hint": "This block would be block {hint_value}. A locktime is only allowed if it is strictly below the block's height. Pick a locktime and rebuild to watch the verdict flip right at the line.",
             "type": "int",
             "min": 0,
             "max": 100_000,

@@ -19,14 +19,13 @@ export default function AboutApproach() {
           bitcoin/bitcoin
         </a>{" "}
         . It contains hundreds of thousands of lines of C++ code. We are running an instance
-        of this program, a bitcoin core node, inside this sandbox. The responses you see come directly
-        from the nodes actual code. It will point the exact line of code that produced the response. 
-        
-        It's not an intuitive process, and its easy to get wrong. The same string can come from two 
-        different checks for two different reasons, so the source map built for this app is a 
-        comprehensive list of all the places a given string can come from, and an explination of 
-        where percicely that response came from.
+        of this program, a Bitcoin Core node, inside this sandbox. The responses you see come directly
+        from the node's actual code, and each one points to the exact line of code that produced it.
 
+        It's not an intuitive process, and it's easy to get wrong. The same string can come from two
+        different checks for two different reasons, so the source map built for this app is a
+        comprehensive list of all the places a given string can come from, and an explanation of
+        precisely where that response came from.
       </p>
 
       <h3 className="home-subhead">How</h3>

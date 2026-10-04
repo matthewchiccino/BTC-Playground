@@ -203,7 +203,6 @@ def build_scenario(req: ScenarioRequest):
         "payload_structured": payload_structured,
         "build_calls": result["build_calls"],
         "editable": editable,
-        "subsidy_sats": result.get("subsidy_sats"),
         "editable_value": result.get("editable_value"),
         "hint_value": result.get("hint_value"),
     }
