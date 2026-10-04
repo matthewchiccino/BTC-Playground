@@ -5,7 +5,7 @@
 # proxying to uvicorn (see Caddyfile's handle_path), so every fetch the
 # built JS makes lands on the same origin the page was served from.
 # CORS never enters the picture in this image.
-FROM node:20-alpine AS frontend-builder
+FROM node:26-alpine AS frontend-builder
 WORKDIR /app/frontend
 COPY frontend/package.json frontend/package-lock.json* ./
 RUN npm ci
