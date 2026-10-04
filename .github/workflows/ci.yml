@@ -1,0 +1,135 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Supersede in-flight runs for the same ref; a newer push makes them moot.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege: nothing here writes to the repo.
+permissions:
+  contents: read
+
+env:
+  # Must match the Dockerfile's BITCOIN_VERSION and the commit sources.py pins
+  # citations to -- a different bitcoind could legitimately change a verdict.
+  BITCOIN_VERSION: "31.1"
+
+jobs:
+  frontend:
+    name: Frontend (lint + build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20 # same as the Dockerfile's frontend-builder
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  backend-unit:
+    name: Backend unit tests (no node)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12" # same as the Dockerfile's runtime image
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - run: pip install -r requirements-dev.txt
+      # Default pytest selection = unit tier only (see backend/pytest.ini).
+      - run: pytest
+
+  integration:
+    name: Integration (live regtest bitcoind)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - run: pip install -r backend/requirements-dev.txt
+
+      - name: Install Bitcoin Core ${{ env.BITCOIN_VERSION }} (checksum-verified)
+        run: |
+          set -euxo pipefail
+          tarball="bitcoin-${BITCOIN_VERSION}-x86_64-linux-gnu.tar.gz"
+          base="https://bitcoincore.org/bin/bitcoin-core-${BITCOIN_VERSION}"
+          curl -fsSLO "${base}/${tarball}"
+          curl -fsSL -o SHA256SUMS "${base}/SHA256SUMS"
+          grep " ${tarball}\$" SHA256SUMS | sha256sum -c -
+          tar -xzf "${tarball}"
+          echo "$PWD/bitcoin-${BITCOIN_VERSION}/bin" >> "$GITHUB_PATH"
+
+      - name: Start regtest node and mine the frozen chain
+        # Credentials are node.py's defaults: an ephemeral, loopback-only
+        # regtest node on a throwaway runner, so there is nothing to protect.
+        run: |
+          set -euxo pipefail
+          DATADIR="$RUNNER_TEMP/bitcoin-regtest"
+          mkdir -p "$DATADIR"
+          bitcoind -regtest -conf="$PWD/regtest.conf" -datadir="$DATADIR" \
+            -rpcuser=btcplayground -rpcpassword=btcplayground -daemon \
+            -debuglogfile="$RUNNER_TEMP/node_debug.log"
+          bitcoin-cli -regtest -conf="$PWD/regtest.conf" -datadir="$DATADIR" \
+            -rpcuser=btcplayground -rpcpassword=btcplayground \
+            -rpcwait -rpcwaittimeout=60 getblockchaininfo
+          cd backend && python setup_chain.py
+
+      - name: Scenario verdicts + exact accept/reject boundaries
+        working-directory: backend
+        run: pytest -m integration
+
+      - name: Upload node log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-debug-log
+          path: ${{ runner.temp }}/node_debug.log
+          if-no-files-found: ignore
+
+  source-citations:
+    name: Source citations still match Bitcoin Core
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - run: pip install -r requirements-dev.txt
+      # Fetches files from the pinned commit on raw.githubusercontent.com.
+      - run: pytest -m network
+
+  docker:
+    name: Container image builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t btc-playground .

@@ -26,3 +26,10 @@ frontend/dist/
 *.swp
 .idea/
 .vscode/
+
+# Dev-only: tests, dev requirements, docs, CI config. None belong in the runtime image.
+backend/tests/
+backend/pytest.ini
+backend/requirements-dev.txt
+docs/
+.github/
