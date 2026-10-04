@@ -1,5 +1,13 @@
 # Consensus Lab — Build Plan
 
+> **Historical.** This is the original handoff plan for the first build, kept
+> because the reasoning is still useful and because it is a good example of a
+> plan written for an AI agent (explicit constraints, "DECIDE" gates, build
+> order). It is **not** the current source of truth: the app has since grown
+> past some of its numbers (e.g. "roughly five backend files"). Current
+> rules live in [`AGENTS.md`](../../AGENTS.md) and [`decisions/`](../decisions/);
+> what is next lives in [`ROADMAP.md`](../../ROADMAP.md).
+
 A handoff document for an AI coding agent. Optimized for **lightweight** and
 **readable**, not for feature count.
 

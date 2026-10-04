@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make help)",
+      "Bash(make test)",
+      "Bash(make lint)",
+      "Bash(make build)",
+      "Bash(make check)"
+    ],
+    "ask": [
+      "Bash(make reset-chain)",
+      "Bash(git push:*)",
+      "Bash(docker:*)",
+      "Bash(fly:*)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Read(./.env)",
+      "Read(./.env.*)"
+    ]
+  }
+}

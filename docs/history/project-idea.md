@@ -1,4 +1,9 @@
 # Project Idea: Consensus Lab 
+
+> **Historical.** The original pitch, before anything was built. See
+> [`ROADMAP.md`](../../ROADMAP.md) for the current plan (its "Phase 2" idea,
+> differential testing, is still on the roadmap).
+
 **Subtitle:** Break Bitcoin's Consensus Rules on Purpose
 
 ## 💡 Elevator Pitch

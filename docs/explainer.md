@@ -1,5 +1,12 @@
 # What You Have Here
 
+> **Learner's explainer, written at the MVP.** The Bitcoin concepts below are
+> still accurate and are the best place to start if consensus vs. policy,
+> regtest, or the UTXO model are new to you. The *app* has since grown: there
+> are 7 scenarios (not 3), the API is `POST /build` then `POST /submit` (not
+> `/run`), and the UI has three steps. For the current system see
+> [`architecture.md`](architecture.md); for decisions see [`decisions/`](decisions/).
+
 This is **My BTC Playground** (working title: Consensus Lab) — an educational sandbox that deliberately submits invalid Bitcoin blocks/transactions to a real Bitcoin Core node and shows you exactly how Core rejects them, including the C++ source code that fired.
 
 The MVP is already built. You have three layers:
@@ -39,18 +46,18 @@ Pick a named attack → backend builds broken Bitcoin data → asks Core to vali
 
 | Piece | What it does |
 |---|---|
-| [`regtest.conf`](regtest.conf) | Config for a local-only Bitcoin network |
-| [`scripts/start_node.sh`](scripts/start_node.sh) | Starts `bitcoind` in regtest mode |
-| [`backend/setup_chain.py`](backend/setup_chain.py) | Run once: mines blocks, creates test UTXOs, freezes the chain |
-| [`backend/fixtures.json`](backend/fixtures.json) | Saved UTXO references + frozen chain tip (written by setup) |
-| [`backend/node.py`](backend/node.py) | Thin wrapper to talk to Core over JSON-RPC |
-| [`backend/mutations.py`](backend/mutations.py) | Builds each invalid payload (the "attacks") |
-| [`backend/scenarios.py`](backend/scenarios.py) | Catalog of attacks — metadata only |
-| [`backend/sources.py`](backend/sources.py) | Maps rejection strings → C++ source snippets |
-| [`backend/main.py`](backend/main.py) | FastAPI: 2 endpoints (`GET /scenarios`, `POST /run`) |
-| [`backend/vendor/test_framework/`](backend/vendor/test_framework/) | Copied from Bitcoin Core's own test suite for block building |
-| [`frontend/src/App.jsx`](frontend/src/App.jsx) | Single-page UI: scenario list + three panes |
-| [`plam.md`](plam.md) | The architecture doc / build plan (your north star) |
+| [`regtest.conf`](../regtest.conf) | Config for a local-only Bitcoin network |
+| [`scripts/start_node.sh`](../scripts/start_node.sh) | Starts `bitcoind` in regtest mode |
+| [`backend/setup_chain.py`](../backend/setup_chain.py) | Run once: mines blocks, creates test UTXOs, freezes the chain |
+| [`backend/fixtures.json`](../backend/fixtures.json) | Saved UTXO references + frozen chain tip (written by setup) |
+| [`backend/node.py`](../backend/node.py) | Thin wrapper to talk to Core over JSON-RPC |
+| [`backend/mutations.py`](../backend/mutations.py) | Builds each invalid payload (the "attacks") |
+| [`backend/scenarios.py`](../backend/scenarios.py) | Catalog of attacks — metadata only |
+| [`backend/sources.py`](../backend/sources.py) | Maps rejection strings → C++ source snippets |
+| [`backend/main.py`](../backend/main.py) | FastAPI: 2 endpoints (`GET /scenarios`, `POST /run`) |
+| [`backend/vendor/test_framework/`](../backend/vendor/test_framework/) | Copied from Bitcoin Core's own test suite for block building |
+| [`frontend/src/App.jsx`](../frontend/src/App.jsx) | Single-page UI: scenario list + three panes |
+| [`build-plan.md`](history/build-plan.md) | The architecture doc / build plan (your north star) |
 
 ---
 
@@ -156,7 +163,7 @@ Two different code paths in Core, which is why your project uses two different R
 
 ## The Two Key RPC Calls
 
-These are the heart of the architecture from [`plam.md`](plam.md):
+These are the heart of the architecture from [`build-plan.md`](history/build-plan.md):
 
 ### `testmempoolaccept([raw_hex])`
 
@@ -180,7 +187,7 @@ Block attacks use this. The double-spend uses it specifically because `testmempo
 
 ## Why the Chain Is "Frozen"
 
-From [`setup_chain.py`](backend/setup_chain.py):
+From [`setup_chain.py`](../backend/setup_chain.py):
 
 1. Mine 120 blocks (coinbase maturity is 100 blocks before you can spend coinbase rewards)
 2. Create two fixture UTXOs:
@@ -230,13 +237,13 @@ Core's UTXO set says "that output is gone" → `bad-txns-inputs-missingorspent`.
 
 ## The Vendored Test Framework
 
-Building valid Bitcoin blocks by hand (coinbase format, merkle computation, witness commitments) is painful. So [`backend/vendor/`](backend/vendor/) contains files copied verbatim from Bitcoin Core's own functional test suite:
+Building valid Bitcoin blocks by hand (coinbase format, merkle computation, witness commitments) is painful. So [`backend/vendor/`](../backend/vendor/) contains files copied verbatim from Bitcoin Core's own functional test suite:
 
 - `messages.py` — `CBlock`, `CTransaction`, serialization/deserialization
 - `blocktools.py` — `create_block()`, `create_coinbase()`
 - Plus dependencies (`script.py`, `key.py`, etc.)
 
-Pinned to **Bitcoin Core v31.1** (see [`VENDORED.md`](backend/vendor/VENDORED.md)). Same version as your running `bitcoind`.
+Pinned to **Bitcoin Core v31.1** (see [`VENDORED.md`](../backend/vendor/VENDORED.md)). Same version as your running `bitcoind`.
 
 For **transactions**, the lighter path is used: let Core's wallet sign via `createrawtransaction` + `signrawtransactionwithwallet`, then mutate bytes in Python.
 
@@ -244,7 +251,7 @@ For **transactions**, the lighter path is used: let Core's wallet sign via `crea
 
 ## The Source Mapping Layer
 
-[`sources.py`](backend/sources.py) is hand-curated — not auto-generated. Each rejection string maps to:
+[`sources.py`](../backend/sources.py) is hand-curated — not auto-generated. Each rejection string maps to:
 
 - File + function + line numbers
 - A pinned GitHub permalink (commit SHA, not branch — line numbers drift on `master`)
@@ -297,12 +304,12 @@ The frozen regtest chain is your test fixture. The scenario catalog is your curr
 
 If you're trying to understand the code:
 
-1. [`projectidea.md`](projectidea.md) — the original pitch (2 min)
-2. [`plam.md`](plam.md) sections 2–4 — the architectural constraints (10 min)
-3. [`backend/scenarios.py`](backend/scenarios.py) — what attacks exist
-4. [`backend/mutations.py`](backend/mutations.py) — how each attack is built
-5. [`backend/main.py`](backend/main.py) — the 50-line glue
-6. [`backend/sources.py`](backend/sources.py) — the C++ mappings
+1. [`project-idea.md`](history/project-idea.md) — the original pitch (2 min)
+2. [`build-plan.md`](history/build-plan.md) sections 2–4 — the architectural constraints (10 min)
+3. [`backend/scenarios.py`](../backend/scenarios.py) — what attacks exist
+4. [`backend/mutations.py`](../backend/mutations.py) — how each attack is built
+5. [`backend/main.py`](../backend/main.py) — the 50-line glue
+6. [`backend/sources.py`](../backend/sources.py) — the C++ mappings
 7. Run `python backend/manual_check.py` with the node up — see raw verdicts
 
 If you want to go deeper on Bitcoin itself, the concepts above (UTXO model, consensus vs policy, coinbase, merkle root) are the minimum. Everything in the codebase assumes you know those.
