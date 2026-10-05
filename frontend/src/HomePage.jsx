@@ -1,9 +1,13 @@
+import NodeViz from "./NodeViz";
+
 export default function HomePage({ scenarios, onSelectScenario }) {
   return (
     <div className="home-page">
       <div className="home-eyebrow">Home</div>
       <h2>BTC Playground</h2>
       <p className="home-lede">Break Bitcoin's consensus rules on purpose.</p>
+
+      <NodeViz scenarios={scenarios} onSelectScenario={onSelectScenario} />
 
       <p className="home-copy">
         Bitcoin Core constatnly rejects invalid blocks and transactions. By seeing how and why,

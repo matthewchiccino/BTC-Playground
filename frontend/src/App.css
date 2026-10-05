@@ -225,6 +225,44 @@
   margin: 0 0 20px;
 }
 
+.node-viz {
+  margin: 0 0 24px;
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
+}
+
+.node-viz canvas {
+  display: block;
+  width: 100%;
+  touch-action: manipulation;
+}
+
+.node-viz-caption {
+  padding: 8px 12px 10px;
+  border-top: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.node-viz-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+}
+
+.node-viz-legend > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.node-viz-hint {
+  margin-top: 6px;
+  color: var(--text-faint);
+  line-height: 1.5;
+}
+
 .home-copy {
   color: var(--text-dim);
   font-size: 14px;
