@@ -15,8 +15,9 @@ from mutations import FIXTURES, MUTATIONS
 from scenarios import SCENARIOS, SCENARIOS_BY_ID
 from sources import COMMIT, SOURCES
 
-REQUIRED = {"id", "title", "kind", "fixture_key", "mutation", "expected_reject_reason",
+REQUIRED = {"id", "title", "summary", "kind", "fixture_key", "mutation", "expected_reject_reason",
             "rule_type", "explanation", "reference", "editable"}
+SUMMARY_MAX_CHARS = 70
 IDS = [s["id"] for s in SCENARIOS]
 
 
@@ -42,6 +43,13 @@ class TestEachScenario:
         reason = s["expected_reject_reason"]
         assert reason in SOURCES, f"add {reason!r} to sources.py (and verify it with `make test-sources`)"
         assert SOURCES[reason]["rule_type"] == s["rule_type"]
+
+    def test_summary_is_one_short_plain_sentence(self, s):
+        # Shown in the home page list, where the long explanation was too much.
+        summary = s["summary"]
+        assert len(summary) <= SUMMARY_MAX_CHARS, f"summary is {len(summary)} chars; keep it under {SUMMARY_MAX_CHARS}"
+        assert summary.endswith(".") and summary.count(".") == 1, "summary must be exactly one sentence"
+        assert not set(summary) & {"\u2014", "\u2013", ";"}, "no dashes or semicolons in the summary"
 
     def test_explanation_reference_placeholder_matches_reference(self, s):
         has_placeholder = "{ref}" in s["explanation"]

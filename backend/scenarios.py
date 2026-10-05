@@ -3,15 +3,16 @@ mutation function in mutations.py -- nothing else should need to change
 (plus a SOURCES entry in sources.py if the rejection string is new).
 
 Everything the UI shows for a scenario comes from this data: the
-explanation, the editable input, and its `hint`. A hint may contain the
-single placeholder {hint_value}, which the UI fills from the mutation's
-`hint_value`. tests/unit/test_catalog.py enforces this contract.
+one-line `summary` (home page list), the explanation, the editable input,
+and its `hint`. A hint may contain the single placeholder {hint_value},
+which the UI fills from the mutation's `hint_value`. tests/unit/test_catalog.py enforces this contract.
 """
 
 SCENARIOS = [
     {
         "id": "coinbase_oversubsidy",
         "title": "Coinbase Oversubsidy",
+        "summary": "A miner tries to pay itself more than it earned.",
         "kind": "block",
         "fixture_key": None,
         "mutation": "coinbase_oversubsidy",
@@ -43,6 +44,7 @@ SCENARIOS = [
     {
         "id": "double_spend",
         "title": "Double Spend",
+        "summary": "A block tries to spend the same coin twice.",
         "kind": "block",
         "fixture_key": "already_spent",
         "mutation": "double_spend",
@@ -75,6 +77,7 @@ SCENARIOS = [
     {
         "id": "bad_merkle_root",
         "title": "Bad Merkle Root",
+        "summary": "A block's fingerprint doesn't match what's inside it.",
         "kind": "block",
         "fixture_key": None,
         "mutation": "bad_merkle_root",
@@ -106,6 +109,7 @@ SCENARIOS = [
     {
         "id": "dust_output",
         "title": "Dust Output",
+        "summary": "A transaction sends an amount too tiny to be worth spending.",
         "kind": "tx",
         "fixture_key": "spendable_a",
         "mutation": "dust_output",
@@ -144,6 +148,7 @@ SCENARIOS = [
     {
         "id": "fee_too_low",
         "title": "Fee Too Low",
+        "summary": "A transaction pays too little fee for nodes to pass it on.",
         "kind": "tx",
         "fixture_key": "spendable_a",
         "mutation": "fee_too_low",
@@ -176,6 +181,7 @@ SCENARIOS = [
     {
         "id": "coinbase_maturity",
         "title": "Coinbase Maturity",
+        "summary": "A miner tries to spend its reward before it's allowed to.",
         "kind": "block",
         "fixture_key": None,
         "mutation": "coinbase_maturity",
@@ -206,6 +212,7 @@ SCENARIOS = [
     {
         "id": "locktime_nonfinal",
         "title": "Locktime",
+        "summary": "A block includes a transaction before its unlock time.",
         "kind": "block",
         "fixture_key": "spendable_a",
         "mutation": "locktime_nonfinal",

@@ -48,7 +48,7 @@ export default function HomePage({ scenarios, onSelectScenario }) {
               <span className="title">{s.title}</span>
               <span className="kind">{s.kind}</span>
             </div>
-            <p>{s.explanation}</p>
+            <p>{s.summary}</p>
           </button>
         ))}
       </div>
