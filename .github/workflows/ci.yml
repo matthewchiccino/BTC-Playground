@@ -6,10 +6,11 @@ on:
   pull_request:
   workflow_dispatch:
 
-# Supersede in-flight runs for the same ref; a newer push makes them moot.
+# Supersede in-flight PR runs; a newer push makes them moot. Runs on main
+# queue instead, so a new push never cancels a deploy halfway through.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # Least privilege: nothing here writes to the repo.
 permissions:
@@ -133,3 +134,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker build -t btc-playground .
+
+  # Continuous deployment: every push to main that passes the gates above
+  # ships to Fly. source-citations is deliberately not a gate: it depends on
+  # third-party hosts (raw.githubusercontent.com, blockstream.info), and an
+  # outage there says nothing about whether this commit is safe to serve.
+  deploy:
+    name: Deploy to Fly.io
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [frontend, backend-unit, integration, docker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: https://btc-playground.fly.dev
+    # Never two rollouts at once; a queued deploy waits for the running one.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      # Builds the Dockerfile on Fly's remote builder and waits for the
+      # /api/health check in fly.toml before calling the rollout done.
+      - run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

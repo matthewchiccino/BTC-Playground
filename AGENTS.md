@@ -23,7 +23,7 @@ FastAPI backend, React/Vite frontend, one shared node, no database, no auth.
 | Cited Core lines still real | `make test-sources` | internet |
 | Run the app | `make dev` | node tools installed |
 
-CI runs exactly these (`.github/workflows/ci.yml`). Green locally means green in CI.
+CI runs exactly these (`.github/workflows/ci.yml`). Green locally means green in CI. A push to `main` that passes CI **deploys to production** automatically, so pushing is shipping.
 
 ## Repo map
 

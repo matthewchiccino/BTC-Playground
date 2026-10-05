@@ -56,6 +56,9 @@ One container, three processes supervised by `entrypoint.sh`:
 uvicorn, so production is one origin and CORS never applies. If any process
 dies the container exits and the orchestrator restarts it; boot is stateless, so
 that is cheap and correct ([ADR 0002](decisions/0002-frozen-chain-stateless-boot.md)). Deployed on Fly.io with an always-on machine and a `/api/health` check.
+Every push to `main` deploys automatically: the `deploy` job in `.github/workflows/ci.yml` runs
+`flyctl deploy --remote-only` once the frontend, unit, integration, and Docker jobs pass (needs the
+`FLY_API_TOKEN` repo secret).
 
 ## What "frozen chain" buys you
 
