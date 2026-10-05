@@ -35,6 +35,7 @@ Browser ──POST /submit {build_id}──▶ main.py
 | `main.py` | HTTP API, validation, body cap, CORS, rate limits. |
 | `buildcache.py` | Short-lived memory of what `/build` produced. A cache, not a store. |
 | `ratelimit.py` | In-memory per-IP sliding window; picks the real client IP behind Fly/Caddy. |
+| `livechain.py` | Recent mainnet blocks from blockstream.info for the landing page visualization (frontend/src/NodeViz.jsx), cached 30s, served stale if upstream fails. Display-only: not our node, never used by a scenario. |
 | `decode.py` | Bytes → labeled fields with change markers (drives the UI diff). |
 | `setup_chain.py` | Mines the frozen chain once, writes `fixtures.json` (UTXOs, fixed scratch addresses). |
 | `vendor/test_framework/` | Bitcoin Core's own test code, verbatim. Never edited. |

@@ -28,7 +28,7 @@ CI runs exactly these (`.github/workflows/ci.yml`). Green locally means green in
 ## Repo map
 
 - `backend/scenarios.py`: **the catalog** (data). `mutations.py`: one builder per scenario. `sources.py`: rejection string → C++ source citation.
-- `backend/main.py`: API (`/build`, `/submit`, `/scenarios`, `/health`, `/node-*`). `buildcache.py`, `ratelimit.py`, `decode.py`, `node.py`: small, single-purpose.
+- `backend/main.py`: API (`/build`, `/submit`, `/scenarios`, `/health`, `/node-*`, `/mainnet-blocks`). `buildcache.py`, `ratelimit.py`, `decode.py`, `node.py`: small, single-purpose. `livechain.py` is display-only mainnet data from a public explorer, **not our node**; never let it feed a scenario.
 - `backend/vendor/test_framework/`: **Bitcoin Core's own code, vendored verbatim. Do not edit.** Vendor a missing dependency instead (`VENDORED.md`).
 - `backend/tests/{unit,integration,network}/`: tiers by what they need. `frontend/src/`: React UI (`App.jsx` is the orchestrator).
 - `docs/`: architecture, playbooks, ADRs. `ROADMAP.md`: what's next.

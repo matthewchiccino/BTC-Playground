@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 import buildcache
+import livechain
 from decode import decode_payload
 from mutations import FIXTURES, MUTATIONS
 from node import rpc
@@ -121,6 +122,16 @@ def node_status():
         "blocks": info["blocks"],
         "bestblockhash": info["bestblockhash"],
     }
+
+
+@app.get("/mainnet-blocks", dependencies=[Depends(limit_status)])
+def mainnet_blocks():
+    """Display-only context from a public explorer, not our node; see livechain.py."""
+    try:
+        return livechain.recent_blocks()
+    except Exception:
+        logger.exception("mainnet explorer fetch failed")
+        raise HTTPException(status_code=502, detail="mainnet explorer unreachable")
 
 
 @app.get("/node-info", dependencies=[Depends(limit_status)])
