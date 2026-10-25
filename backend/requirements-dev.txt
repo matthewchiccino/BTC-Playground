@@ -3,4 +3,4 @@
 # Pinned to what the suite was last run green against.
 -r requirements.txt
 pytest==9.1.1
-httpx2==2.13.1   # FastAPI's TestClient backend (starlette deprecates plain httpx here)
+httpx2==2.16.0   # FastAPI's TestClient backend (starlette deprecates plain httpx here)
