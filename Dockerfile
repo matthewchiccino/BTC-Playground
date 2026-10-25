@@ -43,7 +43,7 @@ RUN set -eux; \
     tar -xzf caddy.tar.gz -C /out/bin caddy
 
 # --- final image ---------------------------------------------------------
-FROM python:3.12-slim-bookworm
+FROM python:3.15-slim-bookworm
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
 COPY --from=fetcher /out/bin/bitcoind /out/bin/bitcoin-cli /out/bin/caddy /usr/local/bin/
